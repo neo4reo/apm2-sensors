@@ -17,6 +17,7 @@
 #define PILOT_PACKET_ID 30
 #define IMU_PACKET_ID 31
 #define GPS_PACKET_ID 32
+#define BARO_PACKET_ID 33
 
 void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size, byte *cksum0, byte *cksum1 )
 {
@@ -423,5 +424,66 @@ void write_gps_ascii()
     Serial.print(" uint8_t:");
     Serial.println(sizeof(uint8_t));
     gps.new_data = 0; // mark the data as read
+}
+
+/* output a binary representation of the barometer data */
+void write_baro_bin()
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 12;
+  byte packet_buf[256]; // hopefully never larger than this!
+  byte *packet = packet_buf;
+
+  if ( !baro.healthy ) {
+    return;
+  }
+    
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = BARO_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = size;
+  Serial.write( buf, 1 );
+
+  *(float *)packet = baro.get_pressure(); packet += 4;
+  *(float *)packet = baro.get_temperature(); packet += 4;
+  *(float *)packet = baro.get_climb_rate(); packet += 4;
+  
+  // write packet
+  Serial.write( packet_buf, size );
+
+  // check sum (2 bytes)
+  ugear_cksum( BARO_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+}
+
+void write_baro_ascii()
+{
+    if ( !baro.healthy ) {
+      return;
+    }
+    // output barometer data
+    Serial.print("Pressure:");
+    Serial.print(baro.get_pressure());
+    Serial.print(" Temperature:");
+    Serial.print(baro.get_temperature());
+    Serial.print(" Altitude:");
+    Serial.print(baro.get_altitude());
+    Serial.printf(" climb=%.2f samples=%u",
+                  baro.get_climb_rate(),
+                  (unsigned)baro.get_pressure_samples());
+    Serial.println();
 }
 

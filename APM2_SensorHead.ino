@@ -109,8 +109,9 @@ static uint32_t dt_millis = 1000 / MASTER_HZ;
 // GPS
 AP_GPS_MTK16      gps(&Serial1);
 
-//AP_AHRS_Quaternion ahrs(&imu, g_gps);
-  
+// Barometer
+AP_Baro_MS5611 baro;
+
 void setup()
 {
     I2c.begin();
@@ -125,8 +126,8 @@ void setup()
     timer_scheduler.init( &isr_registry );
 
     // we need to stop the barometer from holding the SPI bus
-    pinMode(40, OUTPUT);
-    digitalWrite(40, HIGH);
+    // pinMode(40, OUTPUT);
+    // digitalWrite(40, HIGH);
 
     APM_RC.Init(&isr_registry);	 // APM Radio initialization
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
@@ -158,8 +159,10 @@ void setup()
     gps.init();
     delay(200);
     
-    //ahrs.reset();
-
+    Serial.println("Initializing MSC5611 Barometer...");
+    baro.init(&timer_scheduler);
+    baro.calibrate(delay);
+    
     loop_timer = millis();
 }
 
@@ -204,14 +207,19 @@ void loop()
     // GPS Update
     gps.update();
     
+    // Barometer update
+    baro.read();
+    
     if ( binary_output ) {
-        //write_pilot_in_bin();
-        //write_imu_bin();
-        //write_gps_bin();
+        write_pilot_in_bin();
+        write_imu_bin();
+        write_gps_bin();
+        write_baro_bin();
     } else {
         // write_pilot_in_ascii();
-        // write_imu_ascii();
+        write_imu_ascii();
         // write_gps_ascii();
+        write_baro_ascii();
     }
 }
 

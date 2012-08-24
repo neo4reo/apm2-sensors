@@ -1,0 +1,427 @@
+/* Binary I/O section: generial info ...
+ * Packets start with two bytes ... START_OF_MSG0 and START_OF_MSG1
+ * Following that is the packet ID
+ * Following that is the packet data size (not including start bytes or check sum, just the data)
+ * Following that is the actual data packet
+ * Following that is a two byte check sum.  The check sum includes the packet id and size as well as the data.
+ */
+
+#define START_OF_MSG0 147
+#define START_OF_MSG1 224
+
+#define ACK_PACKET_ID 10
+
+#define ACTUATOR_PACKET_ID 20
+#define PWM_RATE_PACKET_ID 21
+
+#define PILOT_PACKET_ID 30
+#define IMU_PACKET_ID 31
+#define GPS_PACKET_ID 32
+
+void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size, byte *cksum0, byte *cksum1 )
+{
+  byte c0 = 0;
+  byte c1 = 0;
+
+  c0 += hdr1;
+  c1 += c0;
+
+  c0 += hdr2;
+  c1 += c0;
+
+  for ( byte i = 0; i < size; i++ ) {
+    c0 += (byte)buf[i];
+    c1 += c0;
+  }
+
+  *cksum0 = c0;
+  *cksum1 = c1;
+}
+
+bool parse_message_bin( byte id, byte *buf, byte message_size )
+{
+  int counter = 0;
+  bool result = false;
+
+  if ( id == ACTUATOR_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
+    /* actuator commands are 2 bytes, lo byte first, then hi byte.  Integer values correspond to servo pulse lenght in us
+     * 1100 is a normal minimum value, 1500 is center, 1900 is a normal maximum value although the min and max can be extended
+     * a bit. */
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+      byte lo = buf[counter++];
+      byte hi = buf[counter++];
+      servo_pos[i] = hi*256 + lo;
+    }
+    result = true;
+  } else if ( id == PWM_RATE_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
+    //Serial.println("read PWM command");
+    /* note that CH1/CH2, CH3/CH4/CH5, and CH6/CH7/CH8 run off grouped timers so setting any of the group will also
+     * force the same rate for the other channels in the group, channels with rate of 0 are left untouched (but will
+     * be affected if another group member rate is set.) */
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        uint32_t ch_mask = _BV(i);
+        uint8_t lo = buf[counter++];
+        uint8_t hi = buf[counter++];
+        uint16_t rate = hi*256 + lo;
+        //Serial.printf("ch %d rate %d\n", i, rate);
+        if ( rate > 0 ) {
+          // sanity checks
+          if ( rate < 5 ) { rate = 5; }
+          if ( rate > 400 ) { rate = 400; }
+          APM_RC.SetFastOutputChannels( ch_mask, rate );
+        }
+    }
+    
+    write_ack_bin( id );
+    
+    result = true;
+  }
+
+  return result;
+}
+
+
+bool read_commands_bin()
+{
+  static byte state = 0; // 0 = looking for SOM0, 1 = looking for SOM1, 2 = looking for packet id & size, 3 = looking for packet data and checksum
+  byte input;
+  static byte buf[256];
+  static byte message_id = 0;
+  static byte message_size = 0;
+  byte cksum0 = 0, cksum1 = 0;
+  bool new_data = false;
+  // Serial.print("top: "); Serial.println(state);
+
+  if ( state == 0 ) {
+    while ( Serial.available() >= 1 ) {
+      // scan for start of message
+      input = Serial.read();
+      if ( input == START_OF_MSG0 ) {
+        // Serial.println("start of msg0");
+        state = 1;
+        break;
+      }
+    }
+  }
+  if ( state == 1 ) {
+    if ( Serial.available() >= 1 ) {
+      input = Serial.read();
+      if ( input == START_OF_MSG1 ) {
+        // Serial.println("start of msg1");
+        state = 2;
+      } 
+      else if ( input == START_OF_MSG0 ) {
+        // no change
+      } 
+      else {
+        // oops
+        state = 0;
+      }
+    }
+  }
+  if ( state == 2 ) {
+    if ( Serial.available() >= 2 ) {
+      message_id = Serial.read();
+      //Serial.print("id="); Serial.println(message_id);
+      message_size = Serial.read();
+      //Serial.print("size="); Serial.println(message_size);
+      //if ( message_id != COMMAND_PACKET_ID ) {
+      // ignore bogus message id's
+      //  state = 0;
+      //} else
+      if ( message_size > 20 ) {
+        // ignore nonsensical sizes
+        state = 0;
+      } 
+      else {
+        state = 3;
+      }
+    }
+  }
+  if ( state == 3 ) {
+    if ( Serial.available() >= message_size ) {
+      for ( int i = 0; i < message_size; i++ ) {
+        buf[i] = Serial.read();
+        // Serial.println(buf[i], DEC);
+      }
+      state = 4;
+    }
+  }
+  if ( state == 4 ) {
+    if ( Serial.available() >= 2 ) {
+      cksum0 = Serial.read();
+      cksum1 = Serial.read();
+      byte new_cksum0, new_cksum1;
+      ugear_cksum( message_id, message_size, buf, message_size, &new_cksum0, &new_cksum1 );
+      if ( cksum0 == new_cksum0 && cksum1 == new_cksum1 ) {
+        //Serial.println("passed check sum!");
+        parse_message_bin( message_id, buf, message_size );
+        new_data = true;
+        binary_output = true;
+        state = 0;
+      } else {
+        // Serial.println("failed check sum");
+        // check sum failure
+        state = 0;
+      }
+    }
+  }
+
+  return new_data;
+}
+
+
+/* output a binary representation of the pilot (rc receiver) data */
+void write_ack_bin( uint8_t command_id )
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 0;
+  byte packet[256]; // hopefully never larger than this!
+
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = ACK_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = 1;
+  Serial.write( buf, 1 );
+
+  // ack id
+  packet[size++] = command_id;
+    
+  // write packet
+  Serial.write( packet, size );
+
+  // check sum (2 bytes)
+  ugear_cksum( ACK_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+}
+
+/* output a binary representation of the pilot (rc receiver) data */
+void write_pilot_in_bin()
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 0;
+  byte packet[256]; // hopefully never larger than this!
+
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = PILOT_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = 2 * NUM_CHANNELS;
+  Serial.write( buf, 1 );
+
+  // servo data
+  for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+    long val = receiver_pos[i];
+    int hi = val / 256;
+    int lo = val - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+  }
+    
+  // write packet
+  Serial.write( packet, size );
+
+  // check sum (2 bytes)
+  ugear_cksum( PILOT_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+}
+
+void write_pilot_in_ascii()
+{
+    // output servo data
+    Serial.print("RCIN:");
+    for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
+        Serial.print(receiver_pos[i]);
+        Serial.print(",");
+    }
+    Serial.println(receiver_pos[NUM_CHANNELS-1]);
+}
+
+/* output a binary representation of the IMU data (note: scaled to 16bit values) */
+void write_imu_bin()
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 0;
+  byte packet[256]; // hopefully never larger than this!
+
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = IMU_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = 2 * MAX_IMU_SENSORS;
+  Serial.write( buf, 1 );
+
+  int16_t val = 0;
+  int hi = 0;
+  int lo = 0;
+  
+  // gyro data
+  for ( int i = 0; i < 3; i++ ) {
+    val = imu_sensors[i] / MPU6000_GYRO_SCALE;
+    hi = (uint16_t)val / 256;
+    lo = (uint16_t)val - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+  }
+
+  // accel data
+  for ( int i = 3; i < 6; i++ ) {
+    val = imu_sensors[i] / MPU6000_ACCEL_SCALE;
+    hi = (uint16_t)val / 256;
+    lo = (uint16_t)val - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+  }
+  
+  val = imu_sensors[6] / MPU6000_TEMP_SCALE;
+  hi = (uint16_t)val / 256;
+  lo = (uint16_t)val - (hi * 256);
+  packet[size++] = byte(lo);
+  packet[size++] = byte(hi);
+      
+  // write packet
+  Serial.write( packet, size );
+
+  // check sum (2 bytes)
+  ugear_cksum( IMU_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+}
+
+void write_imu_ascii()
+{
+    // output imu data
+    Serial.print("IMU:");
+    for ( int i = 0; i < 6; i++ ) {
+        Serial.print(imu_sensors[i]);
+        Serial.print(",");
+    }
+    Serial.println(imu_sensors[6]);
+}
+
+/* output a binary representation of the GPS data */
+void write_gps_bin()
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 36;
+  byte packet_buf[256]; // hopefully never larger than this!
+  byte *packet = packet_buf;
+
+  if ( !gps.new_data ) {
+    return;
+  }
+    
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = GPS_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = size;
+  Serial.write( buf, 1 );
+
+  *(uint32_t *)packet = gps.time; packet += 4;
+  *(uint32_t *)packet = gps.date; packet += 4;
+  *(int32_t *)packet = gps.latitude; packet += 4;
+  *(int32_t *)packet = gps.longitude; packet += 4;
+  *(int32_t *)packet = gps.altitude; packet += 4;
+  *(uint32_t *)packet = gps.ground_speed; packet += 4;
+  *(int32_t *)packet = gps.ground_course; packet += 4;
+  *(int32_t *)packet = gps.speed_3d; packet += 4;
+  *(int16_t *)packet = gps.hdop; packet += 2;
+  *(uint8_t *)packet = gps.num_sats; packet += 1;
+  *(uint8_t *)packet = gps.status(); packet += 1;
+  
+  // write packet
+  Serial.write( packet_buf, size );
+
+  // check sum (2 bytes)
+  ugear_cksum( GPS_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+  
+  gps.new_data = false;
+}
+
+#define T6 1000000
+#define T7 10000000
+void write_gps_ascii()
+{
+    if ( !gps.new_data ) {
+      return;
+    }
+    // output gps data
+    Serial.print("GPS:");
+    Serial.print(" Lat:");
+    Serial.print((float)gps.latitude / T7, DEC);
+    Serial.print(" Lon:");
+    Serial.print((float)gps.longitude / T7, DEC);
+    Serial.print(" Alt:");
+    Serial.print((float)gps.altitude / 100.0, DEC);
+    Serial.print(" GSP:");
+    Serial.print(gps.ground_speed / 100.0);
+    Serial.print(" COG:");
+    Serial.print(gps.ground_course / 100.0, DEC);
+    Serial.print(" SAT:");
+    Serial.print(gps.num_sats, DEC);
+    Serial.print(" FIX:");
+    Serial.print(gps.fix, DEC);
+    Serial.print(" TIM:");
+    Serial.print(gps.time, DEC);
+    Serial.println();
+    Serial.print("long:");
+    Serial.print(sizeof(long));
+    Serial.print(" uint32_t:");
+    Serial.print(sizeof(uint32_t));
+    Serial.print(" int:");
+    Serial.print(sizeof(int));
+    Serial.print(" uint8_t:");
+    Serial.println(sizeof(uint8_t));
+    gps.new_data = 0; // mark the data as read
+}
+

@@ -31,7 +31,8 @@
 #define MASTER_HZ 100
 
 // starting communication baud
-#define DEFAULT_BAUD 115200
+//#define DEFAULT_BAUD 115200
+#define DEFAULT_BAUD 230400
 
 ///////////////////////////////////////////
 // End of config section
@@ -55,6 +56,13 @@
 #define LED_ON           LOW
 # define LED_OFF          HIGH
 
+#define PITOT_SOURCE_ANALOG_PIN 0
+#define BATTERY1_ANALOG_PIN 1
+#define CURRENT1_ANALOG_PIN 2
+//#define BATTERY2_ANALOG_PIN 3
+//#define CURRENT2_ANALOG_PIN 4
+// ANALOG_PIN_VCC is defined in libraries/AP_AnalogSource/AP_Analog_Source_Arduino.h
+
 ///////////////////////////////////////////
 // End Hardware specific config section
 ///////////////////////////////////////////
@@ -75,10 +83,13 @@
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibrated IMU) Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
+#include <AP_AnalogSource.h>
+#include <AP_AnalogSource_Arduino.h>
 //#include <AP_AHRS.h>        // ArduPilot Mega AHRS Library
 #include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <LowPassFilter.h>	// LowPassFilter class (inherits from Filter class)
+#include <AP_Airspeed.h>
 
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess timer_scheduler;
@@ -99,8 +110,13 @@ AP_IMU_INS imu( &ins );
 #define MAX_IMU_SENSORS 7
 float imu_sensors[MAX_IMU_SENSORS];
 
-// FIXME: better analog support
-#define MAX_ANALOG_INPUTS 5
+AP_AnalogSource_Arduino pitot_source(PITOT_SOURCE_ANALOG_PIN);
+AP_AnalogSource_Arduino battery1_source(BATTERY1_ANALOG_PIN);
+AP_AnalogSource_Arduino current1_source(CURRENT1_ANALOG_PIN);
+//AP_AnalogSource_Arduino battery2_source(BATTERY2_ANALOG_PIN);
+//AP_AnalogSource_Arduino current2_source(CURRENT2_ANALOG_PIN);
+
+#define MAX_ANALOG_INPUTS 6
 uint16_t analog[MAX_ANALOG_INPUTS];
 
 static uint32_t loop_timer = 0;
@@ -162,6 +178,17 @@ void setup()
     Serial.println("Initializing MSC5611 Barometer...");
     baro.init(&timer_scheduler);
     baro.calibrate(delay);
+
+    // Configure Analog inputs
+    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
+    pinMode(PITOT_SOURCE_ANALOG_PIN, INPUT);
+    pinMode(BATTERY1_ANALOG_PIN, INPUT);
+    pinMode(CURRENT1_ANALOG_PIN, INPUT);
+    //pinMode(BATTERY2_ANALOG_PIN, INPUT);
+    //pinMode(CURRENT2_ANALOG_PIN, INPUT);
+
+    // prime the pump to avoid overflow in the "averaging" logic
+    read_analogs();
     
     loop_timer = millis();
 }
@@ -210,17 +237,42 @@ void loop()
     // Barometer update
     baro.read();
     
+    // Analog inputs
+    read_analogs();
+
+    //Serial.printf("airspeed %.2f\n", airspeed.get_airspeed());
+    
     if ( binary_output ) {
         write_pilot_in_bin();
         write_imu_bin();
         write_gps_bin();
         write_baro_bin();
+        write_analog_bin();
     } else {
         // write_pilot_in_ascii();
-        write_imu_ascii();
+        // write_imu_ascii();
         // write_gps_ascii();
-        write_baro_ascii();
+        // write_baro_ascii();
+        write_analog_ascii();
     }
+}
+
+void read_analogs() {
+    // Analog inputs update (values are averages of the internal readings since the last read()
+    // These are 10 bit values (0-1023) but floating point averages, so let's scale them up to the
+    // full 16 bit range (0-65535) or multiple by 2^6 (64) so we can convey some precision of 
+    // the "averaged" value.
+    
+    // special case (ugly) but if we put this in the global scope, then it hangs everything.  The
+    // side effect here is that this isn't called until after setup() finishes.
+    static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
+    
+    analog[0] = (uint16_t)(pitot_source.read_average() * 64.0);
+    analog[1] = (uint16_t)(battery1_source.read_average() * 64.0);
+    analog[2] = (uint16_t)(current1_source.read_average() * 64.0);
+    //analog[3] = (uint16_t)(battery2_source.read_average() * 64.0);
+    //analog[4] = (uint16_t)(current2_source.read_average() * 64.0);
+    analog[5] = vcc.read_vcc();
 }
 
 void flash_leds(bool on)

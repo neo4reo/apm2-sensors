@@ -13,11 +13,13 @@
 
 #define ACTUATOR_PACKET_ID 20
 #define PWM_RATE_PACKET_ID 21
+#define BAUD_PACKET_ID 22
 
 #define PILOT_PACKET_ID 30
 #define IMU_PACKET_ID 31
 #define GPS_PACKET_ID 32
 #define BARO_PACKET_ID 33
+#define ANALOG_PACKET_ID 34
 
 void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size, byte *cksum0, byte *cksum1 )
 {
@@ -54,6 +56,32 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
       servo_pos[i] = hi*256 + lo;
     }
     result = true;
+// disable baud changing until I have more time to work out the nuances
+// seems like when the remote end closes and reopens at the new baud, this side
+// may get reset and put back to 115,200 and the whole app starts over.
+#if 0
+  } else if ( id == BAUD_PACKET_ID && message_size == 4 ) {
+    //Serial.println("read Baud command");
+    /* of course changing baud could can break communication until the requesting side changes it's
+     * own baud rate to match*/
+ 
+    uint32_t baud = *(uint32_t *)buf;
+    // Serial.printf("Changing baud to %ld.  See you on the other side!\n", baud);
+    /* sends "ack" at both old baud and new baud rates */
+    write_ack_bin( id );
+    Serial.flush();
+    delay(100);
+    Serial.end();
+    
+    Serial.begin(baud);
+    delay(500);
+    
+    write_ack_bin( id );
+    write_ack_bin( id );
+    write_ack_bin( id );
+    
+    result = true;
+#endif
   } else if ( id == PWM_RATE_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
     //Serial.println("read PWM command");
     /* note that CH1/CH2, CH3/CH4/CH5, and CH6/CH7/CH8 run off grouped timers so setting any of the group will also
@@ -485,5 +513,58 @@ void write_baro_ascii()
                   baro.get_climb_rate(),
                   (unsigned)baro.get_pressure_samples());
     Serial.println();
+}
+
+/* output a binary representation of the analog input data */
+void write_analog_bin()
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 0;
+  byte packet[256]; // hopefully never larger than this!
+
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = ANALOG_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = 2 * MAX_ANALOG_INPUTS;
+  Serial.write( buf, 1 );
+
+  // channel data
+  for ( int i = 0; i < MAX_ANALOG_INPUTS; i++ ) {
+    uint16_t val = analog[i];
+    int hi = val / 256;
+    int lo = val - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+  }
+    
+  // write packet
+  Serial.write( packet, size );
+
+  // check sum (2 bytes)
+  ugear_cksum( ANALOG_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+}
+
+void write_analog_ascii()
+{
+    // output servo data
+    Serial.print("Analog:");
+    for ( int i = 0; i < MAX_ANALOG_INPUTS - 1; i++ ) {
+        Serial.printf("%.2f ", (float)analog[i] / 64.0);
+    }
+    Serial.printf("%.2f\n", (float)analog[MAX_ANALOG_INPUTS-1] / 1000.0);
 }
 

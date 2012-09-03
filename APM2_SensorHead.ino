@@ -29,10 +29,16 @@
 
 // this is the master loop update rate
 #define MASTER_HZ 100
+//#define MASTER_HZ 200
 
-// starting communication baud
+// starting communication baud (16000000/16)/x where x is an integer produces the possible baud
+// rates.  Note this is not the standard 300, 1200, 4800, 9600, 115,200, etc. series.  We can get
+// close enough at the lower baud rates so both ends tolerate any slight discrepancy, but above
+// 115,200 we diverge enough that it may not always work well end to end.  500,000 baud is a
+// 1-to-1 match.
 //#define DEFAULT_BAUD 115200
-#define DEFAULT_BAUD 230400
+//#define DEFAULT_BAUD 200000
+#define DEFAULT_BAUD 500000
 
 ///////////////////////////////////////////
 // End of config section
@@ -102,13 +108,13 @@ APM_RC_APM2 APM_RC;
 uint16_t receiver_pos[NUM_CHANNELS];
 uint16_t servo_pos[NUM_CHANNELS];
 
-//#ifndef CONFIG_MPU6000_CHIP_SELECT_PIN
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
-//#endif
 AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
 AP_IMU_INS imu( &ins );
 #define MAX_IMU_SENSORS 7
 float imu_sensors[MAX_IMU_SENSORS];
+Vector3f imu_accel;
+Vector3f imu_gyro;
 
 AP_AnalogSource_Arduino pitot_source(PITOT_SOURCE_ANALOG_PIN);
 AP_AnalogSource_Arduino battery1_source(BATTERY1_ANALOG_PIN);
@@ -141,10 +147,6 @@ void setup()
     isr_registry.init();
     timer_scheduler.init( &isr_registry );
 
-    // we need to stop the barometer from holding the SPI bus
-    // pinMode(40, OUTPUT);
-    // digitalWrite(40, HIGH);
-
     APM_RC.Init(&isr_registry);	 // APM Radio initialization
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         APM_RC.enable_out(i);
@@ -163,7 +165,21 @@ void setup()
     Serial.print("Serial Number: ");
     Serial.println(SERIAL_NUMBER);
     delay(100);
+   
+    Serial.printf("F_CPU=%ld\n", F_CPU);
+    uint16_t ubrr;
+    uint32_t baud = 230400;
+    ubrr = (F_CPU / 4 / baud - 1) / 2;
+    Serial.printf("ubrr = %d\n", ubrr);
     
+    Serial.println("Initializing MSC5611 Barometer...");
+    baro.init(&timer_scheduler);
+    baro.calibrate(delay);
+ 
+    // we need to stop the barometer from holding the SPI bus during the calibration phase
+    // pinMode(40, OUTPUT);
+    // digitalWrite(40, HIGH);
+
     Serial.println("Initializing gyros ... please keep sensors motionless...");
     imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
     Serial.println("done.");
@@ -175,10 +191,6 @@ void setup()
     gps.init();
     delay(200);
     
-    Serial.println("Initializing MSC5611 Barometer...");
-    baro.init(&timer_scheduler);
-    baro.calibrate(delay);
-
     // Configure Analog inputs
     AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
     pinMode(PITOT_SOURCE_ANALOG_PIN, INPUT);
@@ -222,13 +234,17 @@ void loop()
     APM_RC.OutputCh(CH_8, servo_pos[CH_8] );
     
     // IMU Update
-    ins.update();
-    ins.get_sensors(imu_sensors);
+    imu.update();
+    imu_gyro = imu.get_gyro();
+    imu_accel = imu.get_accel();
+    
     // convert to "standard" coordinate system
-    imu_sensors[0] *= -1.0;
-    imu_sensors[1] *= -1.0;
-    imu_sensors[3] *= -1.0;
-    imu_sensors[4] *= -1.0;
+    imu_sensors[0] = imu_gyro.x * -1.0;
+    imu_sensors[1] = imu_gyro.y * -1.0;
+    imu_sensors[2] = imu_gyro.z *  1.0;
+    imu_sensors[3] = imu_accel.x * -1.0;
+    imu_sensors[4] = imu_accel.y * -1.0;
+    imu_sensors[5] = imu_accel.z *  1.0;
     imu_sensors[6] = ins.temperature();
 
     // GPS Update
@@ -250,10 +266,10 @@ void loop()
         write_analog_bin();
     } else {
         // write_pilot_in_ascii();
-        // write_imu_ascii();
+        write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
-        write_analog_ascii();
+        // write_analog_ascii();
     }
 }
 

@@ -36,9 +36,9 @@
 // close enough at the lower baud rates so both ends tolerate any slight discrepancy, but above
 // 115,200 we diverge enough that it may not always work well end to end.  500,000 baud is a
 // 1-to-1 match.
-//#define DEFAULT_BAUD 115200
-//#define DEFAULT_BAUD 200000
-#define DEFAULT_BAUD 500000
+#define DEFAULT_BAUD 115200
+//#define DEFAULT_BAUD 250000
+//#define DEFAULT_BAUD 500000
 
 ///////////////////////////////////////////
 // End of config section
@@ -147,12 +147,18 @@ void setup()
     isr_registry.init();
     timer_scheduler.init( &isr_registry );
 
+    // For a Futaba T6EX 2.4Ghz FASST system:
+    //   Assuming all controls are at default center trim, no range scaling or endpoint adjustments:
+    //   Minimum position = 1111
+    //   Center position = 1525
+    //   Max position = 1939
+    
     APM_RC.Init(&isr_registry);	 // APM Radio initialization
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         APM_RC.enable_out(i);
-        servo_pos[i] = 1500;
+        servo_pos[i] = 1525;
     }
-    servo_pos[2] = 900; // (special case) throttle to minimum
+    servo_pos[2] = 1111;  // (special case) throttle to minimum.
     
     // set the PWM output rateas as defined above
     uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
@@ -265,8 +271,8 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        // write_pilot_in_ascii();
-        write_imu_ascii();
+        write_pilot_in_ascii();
+        // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();

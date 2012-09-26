@@ -369,7 +369,7 @@ void write_gps_bin()
 {
   byte buf[3];
   byte cksum0, cksum1;
-  byte size = 36;
+  byte size = 28;
   byte packet_buf[256]; // hopefully never larger than this!
   byte *packet = packet_buf;
 
@@ -397,9 +397,10 @@ void write_gps_bin()
   *(int32_t *)packet = gps.latitude; packet += 4;
   *(int32_t *)packet = gps.longitude; packet += 4;
   *(int32_t *)packet = gps.altitude; packet += 4;
-  *(uint32_t *)packet = gps.ground_speed; packet += 4;
-  *(int32_t *)packet = gps.ground_course; packet += 4;
-  *(int32_t *)packet = gps.speed_3d; packet += 4;
+  *(uint16_t *)packet = (uint16_t)gps.ground_speed; packet += 2;
+  if ( gps.ground_course < 0 ) { gps.ground_course += 36000; }
+  *(uint16_t *)packet = (uint16_t)gps.ground_course; packet += 2;
+  // *(int32_t *)packet = gps.speed_3d; packet += 4;
   *(int16_t *)packet = gps.hdop; packet += 2;
   *(uint8_t *)packet = gps.num_sats; packet += 1;
   *(uint8_t *)packet = gps.status(); packet += 1;
@@ -510,7 +511,7 @@ void write_baro_ascii()
     Serial.print(" Altitude:");
     Serial.print(baro.get_altitude());
     Serial.printf(" climb=%.2f samples=%u",
-                  baro.get_climb_rate(),
+                  (double)baro.get_climb_rate(),
                   (unsigned)baro.get_pressure_samples());
     Serial.println();
 }

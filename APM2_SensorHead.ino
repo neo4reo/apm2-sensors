@@ -11,10 +11,10 @@
 
 ///////////////////////////////////////////
 // Config section
-///////////////////////////////////////////
+///////////////////77//////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 100
+#define FIRMWARE_REV 101
 
 // Serial number (needs to be updated manually)
 #define SERIAL_NUMBER 12345
@@ -102,6 +102,7 @@ AP_TimerProcess timer_scheduler;
 
 FastSerialPort0(Serial);  // FTDI/Console
 FastSerialPort1(Serial1); // GPS port
+FastSerialPort2(Serial2); // Auxillary port
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
 APM_RC_APM2 APM_RC;
@@ -128,8 +129,11 @@ uint16_t analog[MAX_ANALOG_INPUTS];
 static uint32_t loop_timer = 0;
 static uint32_t dt_millis = 1000 / MASTER_HZ;
 
-// GPS
-AP_GPS_MTK16      gps(&Serial1);
+// GPS (Enable the appropriate GPS)
+static GPS *g_gps;
+AP_GPS_Auto g_gps_driver(&Serial1, &g_gps);
+// AP_GPS_MTK16      g_gps_driver(&Serial1);
+// AP_GPS_UBLOX      g_gps_driver(&Serial1);
 
 // Barometer
 AP_Baro_MS5611 baro;
@@ -171,7 +175,7 @@ void setup()
     Serial.print("Serial Number: ");
     Serial.println(SERIAL_NUMBER);
     delay(100);
-   
+    
     Serial.printf("F_CPU=%ld\n", F_CPU);
     uint16_t ubrr;
     uint32_t baud = 230400;
@@ -191,10 +195,11 @@ void setup()
     Serial.println("done.");
     delay(100);
 
-    Serial.println("Initializing MTK GPS...");
+    Serial.println("Initializing GPS (Autodetecting hardware) ...");
     // standard gps rate
     Serial1.begin(38400, 256, 16);
-    gps.init();
+    g_gps = &g_gps_driver;
+    g_gps->init(GPS::GPS_ENGINE_AIRBORNE_4G);
     delay(200);
     
     // Configure Analog inputs
@@ -208,6 +213,9 @@ void setup()
     // prime the pump to avoid overflow in the "averaging" logic
     read_analogs();
     
+    Serial2.begin(DEFAULT_BAUD);
+    Serial2.println("APM2 Aux Port");
+   
     loop_timer = millis();
 }
 
@@ -254,7 +262,7 @@ void loop()
     imu_sensors[6] = ins.temperature();
 
     // GPS Update
-    gps.update();
+    g_gps->update();
     
     // Barometer update
     baro.read();
@@ -271,11 +279,17 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        write_pilot_in_ascii();
+        // write_pilot_in_ascii();
         // write_imu_ascii();
-        // write_gps_ascii();
+        write_gps_ascii();
         // write_baro_ascii();
-        // write_analog_ascii();
+        //write_analog_ascii();
+#if 0
+        while ( Serial2.available() >= 1 ) {
+          byte input = Serial2.read();
+          Serial.write(input);
+        }
+#endif
     }
 }
 

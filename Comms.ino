@@ -373,7 +373,7 @@ void write_gps_bin()
   byte packet_buf[256]; // hopefully never larger than this!
   byte *packet = packet_buf;
 
-  if ( !gps.new_data ) {
+  if ( !g_gps->new_data ) {
     return;
   }
     
@@ -392,18 +392,18 @@ void write_gps_bin()
   buf[0] = size;
   Serial.write( buf, 1 );
 
-  *(uint32_t *)packet = gps.time; packet += 4;
-  *(uint32_t *)packet = gps.date; packet += 4;
-  *(int32_t *)packet = gps.latitude; packet += 4;
-  *(int32_t *)packet = gps.longitude; packet += 4;
-  *(int32_t *)packet = gps.altitude; packet += 4;
-  *(uint16_t *)packet = (uint16_t)gps.ground_speed; packet += 2;
-  if ( gps.ground_course < 0 ) { gps.ground_course += 36000; }
-  *(uint16_t *)packet = (uint16_t)gps.ground_course; packet += 2;
-  // *(int32_t *)packet = gps.speed_3d; packet += 4;
-  *(int16_t *)packet = gps.hdop; packet += 2;
-  *(uint8_t *)packet = gps.num_sats; packet += 1;
-  *(uint8_t *)packet = gps.status(); packet += 1;
+  *(uint32_t *)packet = g_gps->time; packet += 4;
+  *(uint32_t *)packet = g_gps->date; packet += 4;
+  *(int32_t *)packet = g_gps->latitude; packet += 4;
+  *(int32_t *)packet = g_gps->longitude; packet += 4;
+  *(int32_t *)packet = g_gps->altitude; packet += 4;
+  *(uint16_t *)packet = (uint16_t)g_gps->ground_speed; packet += 2;
+  if ( g_gps->ground_course < 0 ) { g_gps->ground_course += 36000; }
+  *(uint16_t *)packet = (uint16_t)g_gps->ground_course; packet += 2;
+  // *(int32_t *)packet = g_gps->speed_3d; packet += 4;
+  *(int16_t *)packet = g_gps->hdop; packet += 2;
+  *(uint8_t *)packet = g_gps->num_sats; packet += 1;
+  *(uint8_t *)packet = g_gps->status(); packet += 1;
   
   // write packet
   Serial.write( packet_buf, size );
@@ -415,44 +415,44 @@ void write_gps_bin()
   buf[2] = 0;
   Serial.write( buf, 2 );
   
-  gps.new_data = false;
+  g_gps->new_data = false;
 }
 
 #define T6 1000000
 #define T7 10000000
 void write_gps_ascii()
 {
-    if ( !gps.new_data ) {
+    if ( !g_gps->new_data ) {
       return;
     }
     // output gps data
     Serial.print("GPS:");
     Serial.print(" Lat:");
-    Serial.print((float)gps.latitude / T7, DEC);
+    Serial.print((float)g_gps->latitude / T7, DEC);
     Serial.print(" Lon:");
-    Serial.print((float)gps.longitude / T7, DEC);
+    Serial.print((float)g_gps->longitude / T7, DEC);
     Serial.print(" Alt:");
-    Serial.print((float)gps.altitude / 100.0, DEC);
+    Serial.print((float)g_gps->altitude / 100.0, DEC);
     Serial.print(" GSP:");
-    Serial.print(gps.ground_speed / 100.0);
+    Serial.print(g_gps->ground_speed / 100.0);
     Serial.print(" COG:");
-    Serial.print(gps.ground_course / 100.0, DEC);
+    Serial.print(g_gps->ground_course / 100.0, DEC);
     Serial.print(" SAT:");
-    Serial.print(gps.num_sats, DEC);
+    Serial.print(g_gps->num_sats, DEC);
     Serial.print(" FIX:");
-    Serial.print(gps.fix, DEC);
+    Serial.print(g_gps->fix, DEC);
     Serial.print(" TIM:");
-    Serial.print(gps.time, DEC);
+    Serial.print(g_gps->time, DEC);
     Serial.println();
-    Serial.print("long:");
+    /*Serial.print("long:");
     Serial.print(sizeof(long));
     Serial.print(" uint32_t:");
     Serial.print(sizeof(uint32_t));
     Serial.print(" int:");
     Serial.print(sizeof(int));
     Serial.print(" uint8_t:");
-    Serial.println(sizeof(uint8_t));
-    gps.new_data = 0; // mark the data as read
+    Serial.println(sizeof(uint8_t));*/
+    g_gps->new_data = 0; // mark the data as read
 }
 
 /* output a binary representation of the barometer data */

@@ -14,6 +14,7 @@
 #define ACTUATOR_PACKET_ID 20
 #define PWM_RATE_PACKET_ID 21
 #define BAUD_PACKET_ID 22
+#define AUX2_RELAY_PACKET_ID 23
 
 #define PILOT_PACKET_ID 30
 #define IMU_PACKET_ID 31
@@ -110,7 +111,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 }
 
 
-bool read_commands_bin()
+bool read_commands()
 {
   static byte state = 0; // 0 = looking for SOM0, 1 = looking for SOM1, 2 = looking for packet id & size, 3 = looking for packet data and checksum
   byte input;
@@ -198,6 +199,117 @@ bool read_commands_bin()
 
   return new_data;
 }
+
+
+bool relay_aux2_port() {
+    byte input;
+    static int pos = 0;
+    static char buf[256];
+    
+    while ( Serial2.available() >= 1 ) {
+      input = Serial2.read();
+      if ( input == '\n' || pos >= 256 ) {
+        // send the buffer over (if we encounter a newline or we fill up the buffer which should never happen but just in case)
+        pos = 0;
+      } else if ( pos < 256 ) {
+        buf[pos] = input;
+        pos++;
+      }
+    }
+}
+
+
+#if 0
+// more complex, but robust binary packet read routine
+bool read_commands_aux2()
+{
+  static byte state = 0; // 0 = looking for SOM0, 1 = looking for SOM1, 2 = looking for packet id & size, 3 = looking for packet data and checksum
+  byte input;
+  static byte buf[256];
+  static byte message_id = 0;
+  static byte message_size = 0;
+  byte cksum0 = 0, cksum1 = 0;
+  bool new_data = false;
+  // Serial2.print("top: "); Serial2.println(state);
+
+  if ( state == 0 ) {
+    while ( Serial2.available() >= 1 ) {
+      // scan for start of message
+      input = Serial2.read();
+      if ( input == START_OF_MSG0 ) {
+        // Serial2.println("start of msg0");
+        state = 1;
+        break;
+      }
+    }
+  }
+  if ( state == 1 ) {
+    if ( Serial2.available() >= 1 ) {
+      input = Serial2.read();
+      if ( input == START_OF_MSG1 ) {
+        // Serial2.println("start of msg1");
+        state = 2;
+      } 
+      else if ( input == START_OF_MSG0 ) {
+        // no change
+      } 
+      else {
+        // oops
+        state = 0;
+      }
+    }
+  }
+  if ( state == 2 ) {
+    if ( Serial2.available() >= 2 ) {
+      message_id = Serial2.read();
+      //Serial2.print("id="); Serial2.println(message_id);
+      message_size = Serial2.read();
+      //Serial2.print("size="); Serial2.println(message_size);
+      //if ( message_id != COMMAND_PACKET_ID ) {
+      // ignore bogus message id's
+      //  state = 0;
+      //} else
+      if ( message_size > 200 ) {
+        // ignore nonsensical sizes
+        state = 0;
+      } 
+      else {
+        state = 3;
+      }
+    }
+  }
+  if ( state == 3 ) {
+    if ( Serial2.available() >= message_size ) {
+      for ( int i = 0; i < message_size; i++ ) {
+        buf[i] = Serial2.read();
+        // Serial2.println(buf[i], DEC);
+      }
+      state = 4;
+    }
+  }
+  if ( state == 4 ) {
+    if ( Serial2.available() >= 2 ) {
+      cksum0 = Serial2.read();
+      cksum1 = Serial2.read();
+      byte new_cksum0, new_cksum1;
+      ugear_cksum( message_id, message_size, buf, message_size, &new_cksum0, &new_cksum1 );
+      if ( cksum0 == new_cksum0 && cksum1 == new_cksum1 ) {
+        //Serial2.println("passed check sum!");
+        parse_message_bin( message_id, buf, message_size );
+        new_data = true;
+        binary_output = true;
+        state = 0;
+      } else {
+        // Serial2.println("failed check sum");
+        // check sum failure
+        state = 0;
+      }
+    }
+  }
+
+  return new_data;
+}
+#endif
 
 
 /* output a binary representation of the pilot (rc receiver) data */
@@ -561,11 +673,55 @@ void write_analog_bin()
 
 void write_analog_ascii()
 {
+    /*
+    static float amp_filt = 0.0;
+    amp_filt = 0.999 * amp_filt + 0.001 * battery_amps;
+    */
+    
     // output servo data
     Serial.print("Analog:");
     for ( int i = 0; i < MAX_ANALOG_INPUTS - 1; i++ ) {
         Serial.printf("%.2f ", (float)analog[i] / 64.0);
     }
     Serial.printf("%.2f\n", (float)analog[MAX_ANALOG_INPUTS-1] / 1000.0);
+    /*
+    Serial.printf("%.2f ", vcc_average);
+    Serial.printf("%.2f ", (float)battery_voltage);
+    Serial.printf("%.4f ", (float)amp_filt);
+    Serial.printf("%.4f\n", (float)amps_sum);
+    */
+}
+
+/* output a binary representation of the pilot (rc receiver) data */
+void write_aux2_bin( uint8_t *payload, int len )
+{
+  byte buf[3];
+  byte cksum0, cksum1;
+  byte size = 0;
+
+  // start of message sync bytes
+  buf[0] = START_OF_MSG0; 
+  buf[1] = START_OF_MSG1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
+
+  // packet id (1 byte)
+  buf[0] = AUX2_RELAY_PACKET_ID; 
+  buf[1] = 0;
+  Serial.write( buf, 1 );
+
+  // packet length (1 byte)
+  buf[0] = len;
+  Serial.write( buf, 1 );
+    
+  // write packet
+  Serial.write( payload, len );
+
+  // check sum (2 bytes)
+  ugear_cksum( AUX2_RELAY_PACKET_ID, len, payload, len, &cksum0, &cksum1 );
+  buf[0] = cksum0; 
+  buf[1] = cksum1; 
+  buf[2] = 0;
+  Serial.write( buf, 2 );
 }
 

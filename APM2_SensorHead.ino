@@ -126,6 +126,19 @@ AP_AnalogSource_Arduino current1_source(CURRENT1_ANALOG_PIN);
 #define MAX_ANALOG_INPUTS 6
 uint16_t analog[MAX_ANALOG_INPUTS];
 
+#if 0
+// uncomment one of these
+#define VOLT_DIV_RATIO     4.089   // This is the value I computed experimentally
+// #define VOLT_DIV_RATIO     4.127   // This is the proper value for the AttoPilot 45A (13.6V) sensor
+// #define VOLT_DIV_RATIO     15.70   // This is the proper value for the AttoPilot 50V/90A sensor
+
+#define CURR_AMPS_OFFSET   0.0
+
+// uncomment one of these
+#define CURR_AMP_PER_VOLT     13.66   // This is the proper value for the AttoPilot 45A (13.6V) sensor
+// #define CURR_AMP_PER_VOLT    27.32  // This is the proper value for the AttoPilot 50V/90A sensor
+#endif
+
 static uint32_t loop_timer = 0;
 static uint32_t dt_millis = 1000 / MASTER_HZ;
 
@@ -233,7 +246,7 @@ void loop()
     }
 
     // suck in any host commmands    
-    while ( read_commands_bin() );
+    while ( read_commands() );
 
     // update servos
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
@@ -281,9 +294,9 @@ void loop()
     } else {
         // write_pilot_in_ascii();
         // write_imu_ascii();
-        write_gps_ascii();
+        // write_gps_ascii();
         // write_baro_ascii();
-        //write_analog_ascii();
+        write_analog_ascii();
 #if 0
         while ( Serial2.available() >= 1 ) {
           byte input = Serial2.read();
@@ -291,7 +304,23 @@ void loop()
         }
 #endif
     }
+    
+#if 0
+    // Read the Aux APM2 Serial port.  This port is currently setup as a "relay" so any commands that are read from
+    // Serial2 will be written back out to Serial (relayed to the upstream host.)  Also, we will take any messages from
+    // the upstream host that are intended to be relayed out the aux port and write them out.  This effectively gives us 
+    // another serial port on the upstream host (athough with some extra comm overhead and with strict communication 
+    // packet formats enforced.)
+    while ( read_commands_aux2() );
+#endif
 }
+
+/*
+static float vcc_average = 5.0;
+static float battery_voltage = 0.0;
+static float battery_amps = 0.0;
+static float amps_sum = 0.0;
+*/
 
 void read_analogs() {
     // Analog inputs update (values are averages of the internal readings since the last read()
@@ -309,6 +338,13 @@ void read_analogs() {
     //analog[3] = (uint16_t)(battery2_source.read_average() * 64.0);
     //analog[4] = (uint16_t)(current2_source.read_average() * 64.0);
     analog[5] = vcc.read_vcc();
+
+    /*    
+    vcc_average = 0.99 * vcc_average + 0.01 * (analog[5] / 1000.0);
+    battery_voltage = (analog[1]/64.0) * (vcc_average/1024.0) * VOLT_DIV_RATIO;
+    battery_amps = (((analog[2]/64.0) * (vcc_average/1024.0)) - CURR_AMPS_OFFSET) * CURR_AMP_PER_VOLT * 10;
+    amps_sum += battery_amps * dt_millis * 0.0002778; // .0002778 is 1/3600 (conversion to hours)
+    */
 }
 
 void flash_leds(bool on)

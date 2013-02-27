@@ -204,14 +204,16 @@ bool read_commands()
 bool relay_aux2_port() {
     byte input;
     static int pos = 0;
-    static char buf[256];
+    static uint8_t buf[256];
     
     while ( Serial2.available() >= 1 ) {
       input = Serial2.read();
-      if ( input == '\n' || pos >= 256 ) {
+      if ( input == '\n' || pos >= 255 ) {
         // send the buffer over (if we encounter a newline or we fill up the buffer which should never happen but just in case)
+        write_aux2_bin(buf, pos);
+        Serial2.write(buf, pos);
         pos = 0;
-      } else if ( pos < 256 ) {
+      } else if ( pos < 255 ) {
         buf[pos] = input;
         pos++;
       }

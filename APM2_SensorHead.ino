@@ -313,6 +313,7 @@ void loop()
     // packet formats enforced.)
     while ( read_commands_aux2() );
 #endif
+    relay_aux2_port();
 }
 
 /*

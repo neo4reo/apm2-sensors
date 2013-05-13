@@ -144,9 +144,9 @@ static uint32_t dt_millis = 1000 / MASTER_HZ;
 
 // GPS (Enable the appropriate GPS)
 static GPS *g_gps;
-AP_GPS_Auto g_gps_driver(&Serial1, &g_gps);
+// AP_GPS_Auto g_gps_driver(&Serial1, &g_gps);
 // AP_GPS_MTK16      g_gps_driver(&Serial1);
-// AP_GPS_UBLOX      g_gps_driver(&Serial1);
+AP_GPS_UBLOX      g_gps_driver(&Serial1);
 
 // Barometer
 AP_Baro_MS5611 baro;
@@ -294,9 +294,9 @@ void loop()
     } else {
         // write_pilot_in_ascii();
         // write_imu_ascii();
-        // write_gps_ascii();
+        write_gps_ascii();
         // write_baro_ascii();
-        write_analog_ascii();
+        // write_analog_ascii();
 #if 0
         while ( Serial2.available() >= 1 ) {
           byte input = Serial2.read();

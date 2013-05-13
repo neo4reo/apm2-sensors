@@ -557,6 +557,8 @@ void write_gps_ascii()
     Serial.print(g_gps->fix, DEC);
     Serial.print(" TIM:");
     Serial.print(g_gps->time, DEC);
+    Serial.print(" DATE:");
+    Serial.print(g_gps->date, DEC);
     Serial.println();
     /*Serial.print("long:");
     Serial.print(sizeof(long));

@@ -14,7 +14,7 @@
 ///////////////////77//////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 101
+#define FIRMWARE_REV 102
 
 // Serial number (needs to be updated manually)
 #define SERIAL_NUMBER 12345
@@ -208,7 +208,7 @@ void setup()
     Serial.println("done.");
     delay(100);
 
-    Serial.println("Initializing GPS (Autodetecting hardware) ...");
+    Serial.println("Initializing GPS (Expecting ublox hardware) ...");
     // standard gps rate
     Serial1.begin(38400, 256, 16);
     g_gps = &g_gps_driver;
@@ -292,9 +292,9 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        // write_pilot_in_ascii();
+        write_pilot_in_ascii();
         // write_imu_ascii();
-        write_gps_ascii();
+        // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
 #if 0

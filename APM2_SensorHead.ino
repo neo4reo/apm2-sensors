@@ -14,7 +14,7 @@
 ///////////////////77//////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 102
+#define FIRMWARE_REV 200
 
 // Serial number (needs to be updated manually)
 #define SERIAL_NUMBER 12345
@@ -63,10 +63,10 @@
 # define LED_OFF          HIGH
 
 #define PITOT_SOURCE_ANALOG_PIN 0
-#define BATTERY1_ANALOG_PIN 1
-#define CURRENT1_ANALOG_PIN 2
-//#define BATTERY2_ANALOG_PIN 3
-//#define CURRENT2_ANALOG_PIN 4
+#define CURRENT1_ANALOG_PIN 1 /* A12 if power module port used */
+#define VOLTAGE1_ANALOG_PIN 2 /* A13 if power module port used, but caution bug kills VCC sensing, fixed in later apm code. */
+//#define CURRENT2_ANALOG_PIN 3
+//#define VOLTAGE2_ANALOG_PIN 4
 // ANALOG_PIN_VCC is defined in libraries/AP_AnalogSource/AP_Analog_Source_Arduino.h
 
 ///////////////////////////////////////////
@@ -102,7 +102,7 @@ AP_TimerProcess timer_scheduler;
 
 FastSerialPort0(Serial);  // FTDI/Console
 FastSerialPort1(Serial1); // GPS port
-FastSerialPort2(Serial2); // Auxillary port
+//FastSerialPort2(Serial2); // Auxillary port
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
 APM_RC_APM2 APM_RC;
@@ -118,10 +118,10 @@ Vector3f imu_accel;
 Vector3f imu_gyro;
 
 AP_AnalogSource_Arduino pitot_source(PITOT_SOURCE_ANALOG_PIN);
-AP_AnalogSource_Arduino battery1_source(BATTERY1_ANALOG_PIN);
 AP_AnalogSource_Arduino current1_source(CURRENT1_ANALOG_PIN);
-//AP_AnalogSource_Arduino battery2_source(BATTERY2_ANALOG_PIN);
+AP_AnalogSource_Arduino battery1_source(VOLTAGE1_ANALOG_PIN);
 //AP_AnalogSource_Arduino current2_source(CURRENT2_ANALOG_PIN);
+//AP_AnalogSource_Arduino battery2_source(VOLTAGE2_ANALOG_PIN);
 
 #define MAX_ANALOG_INPUTS 6
 uint16_t analog[MAX_ANALOG_INPUTS];
@@ -218,16 +218,16 @@ void setup()
     // Configure Analog inputs
     AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
     pinMode(PITOT_SOURCE_ANALOG_PIN, INPUT);
-    pinMode(BATTERY1_ANALOG_PIN, INPUT);
     pinMode(CURRENT1_ANALOG_PIN, INPUT);
-    //pinMode(BATTERY2_ANALOG_PIN, INPUT);
+    pinMode(VOLTAGE1_ANALOG_PIN, INPUT);
     //pinMode(CURRENT2_ANALOG_PIN, INPUT);
+    //pinMode(VOLTAGE2_ANALOG_PIN, INPUT);
 
     // prime the pump to avoid overflow in the "averaging" logic
     read_analogs();
     
-    Serial2.begin(DEFAULT_BAUD);
-    Serial2.println("APM2 Aux Port");
+    //Serial2.begin(DEFAULT_BAUD);
+    //Serial2.println("APM2 Aux Port");
    
     loop_timer = millis();
 }
@@ -292,28 +292,14 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        write_pilot_in_ascii();
+        // write_pilot_in_ascii();
         // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
-        // write_analog_ascii();
-#if 0
-        while ( Serial2.available() >= 1 ) {
-          byte input = Serial2.read();
-          Serial.write(input);
-        }
-#endif
+        write_analog_ascii();
     }
     
-#if 0
-    // Read the Aux APM2 Serial port.  This port is currently setup as a "relay" so any commands that are read from
-    // Serial2 will be written back out to Serial (relayed to the upstream host.)  Also, we will take any messages from
-    // the upstream host that are intended to be relayed out the aux port and write them out.  This effectively gives us 
-    // another serial port on the upstream host (athough with some extra comm overhead and with strict communication 
-    // packet formats enforced.)
-    while ( read_commands_aux2() );
-#endif
-    relay_aux2_port();
+
 }
 
 /*

@@ -14,6 +14,7 @@
 #define ACTUATOR_PACKET_ID 20
 #define PWM_RATE_PACKET_ID 21
 #define BAUD_PACKET_ID 22
+#define FLIGHT_COMMAND_PACKET_ID 23
 
 #define PILOT_PACKET_ID 30
 #define IMU_PACKET_ID 31
@@ -53,7 +54,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
       byte lo = buf[counter++];
       byte hi = buf[counter++];
-      servo_pos[i] = hi*256 + lo;
+      actuator_pos[i] = hi*256 + lo;
     }
     result = true;
 // disable baud changing until I have more time to work out the nuances
@@ -263,7 +264,7 @@ void write_pilot_in_bin()
 
   // servo data
   for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-    long val = receiver_pos[i];
+    long val = receiver_raw[i];
     int hi = val / 256;
     int lo = val - (hi * 256);
     packet[size++] = byte(lo);
@@ -286,10 +287,10 @@ void write_pilot_in_ascii()
     // output servo data
     Serial.print("RCIN:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.print(receiver_pos[i]);
-        Serial.print(",");
+        Serial.printf("%6.3f, ", receiver_norm[i]);
     }
-    Serial.println(receiver_pos[NUM_CHANNELS-1]);
+    Serial.printf("%6.3f", receiver_norm[NUM_CHANNELS-1]);
+    Serial.println();
 }
 
 /* output a binary representation of the IMU data (note: scaled to 16bit values) */

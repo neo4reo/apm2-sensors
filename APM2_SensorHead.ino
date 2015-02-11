@@ -14,7 +14,7 @@
 ///////////////////77//////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 200
+#define FIRMWARE_REV 210
 
 // Serial number (needs to be updated manually)
 #define SERIAL_NUMBER 12345
@@ -106,8 +106,9 @@ FastSerialPort1(Serial1); // GPS port
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
 APM_RC_APM2 APM_RC;
-uint16_t receiver_pos[NUM_CHANNELS];
-uint16_t servo_pos[NUM_CHANNELS];
+int receiver_raw[NUM_CHANNELS];
+float receiver_norm[NUM_CHANNELS];
+int actuator_pos[NUM_CHANNELS];
 
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
 AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
@@ -173,9 +174,9 @@ void setup()
     APM_RC.Init(&isr_registry);	 // APM Radio initialization
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         APM_RC.enable_out(i);
-        servo_pos[i] = 1525;
+        actuator_pos[i] = 1500;
     }
-    servo_pos[2] = 1111;  // (special case) throttle to minimum.
+    actuator_pos[2] = 1111;  // (special case) throttle to minimum.
     
     // set the PWM output rateas as defined above
     uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
@@ -237,29 +238,15 @@ void loop()
     while ( millis() < loop_timer ); // busy wait for next frame
     loop_timer += dt_millis;
     
-    // New radio frame?
-    if ( APM_RC.GetState() == 1 ) {
-        // read channel data
-	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-            receiver_pos[i] = APM_RC.InputCh(i);
-	}
-    }
-
+    // Fetch new radio frame
+    receiver_read();
+    
     // suck in any host commmands    
     while ( read_commands() );
 
-    // update servos
-    for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        if ( receiver_pos[CH_8] > 1500 ) {
-          // manual pass through
-          APM_RC.OutputCh(i, receiver_pos[i] );
-        } else {
-          // autonomous mode
-          APM_RC.OutputCh(i, servo_pos[i] );
-        }
-    }
-    APM_RC.OutputCh(CH_8, servo_pos[CH_8] );
-    
+    // compute outputs (possibly with mixing)
+    actuators_update();
+
     // IMU Update
     imu.update();
     imu_gyro = imu.get_gyro();
@@ -282,8 +269,6 @@ void loop()
     
     // Analog inputs
     read_analogs();
-
-    //Serial.printf("airspeed %.2f\n", airspeed.get_airspeed());
     
     if ( binary_output ) {
         write_pilot_in_bin();
@@ -292,22 +277,14 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        // write_pilot_in_ascii();
+        write_pilot_in_ascii();
         // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
-        write_analog_ascii();
+        // write_analog_ascii();
     }
-    
-
 }
 
-/*
-static float vcc_average = 5.0;
-static float battery_voltage = 0.0;
-static float battery_amps = 0.0;
-static float amps_sum = 0.0;
-*/
 
 void read_analogs() {
     // Analog inputs update (values are averages of the internal readings since the last read()

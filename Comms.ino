@@ -15,12 +15,14 @@
 #define PWM_RATE_PACKET_ID 21
 #define BAUD_PACKET_ID 22
 #define FLIGHT_COMMAND_PACKET_ID 23
+#define MIX_MODE_PACKET_ID 24
 
 #define PILOT_PACKET_ID 30
 #define IMU_PACKET_ID 31
 #define GPS_PACKET_ID 32
 #define BARO_PACKET_ID 33
 #define ANALOG_PACKET_ID 34
+
 
 void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size, byte *cksum0, byte *cksum1 )
 {
@@ -101,10 +103,12 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
           APM_RC.SetFastOutputChannels( ch_mask, rate );
         }
     }
-    
     write_ack_bin( id );
     
     result = true;
+  } else if ( id == MIX_MODE_PACKET_ID && message_size == 5 ) {
+    mixing_command_parse( buf );
+    write_ack_bin( id );
   }
 
   return result;
@@ -287,9 +291,11 @@ void write_pilot_in_ascii()
     // output servo data
     Serial.print("RCIN:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.printf("%6.3f, ", receiver_norm[i]);
+        Serial.printf("%6.1f%% ", receiver_norm[i] / 100.0);
+        //Serial.printf("%ld ", receiver_norm[i]);
     }
-    Serial.printf("%6.3f", receiver_norm[NUM_CHANNELS-1]);
+    Serial.printf("%6.1f%%", receiver_norm[NUM_CHANNELS-1] / 100.0);
+    //Serial.printf("%ld", receiver_norm[NUM_CHANNELS-1]);
     Serial.println();
 }
 

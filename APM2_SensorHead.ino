@@ -107,7 +107,7 @@ bool binary_output = false; // start with ascii output (then switch to binary if
 
 APM_RC_APM2 APM_RC;
 int receiver_raw[NUM_CHANNELS];
-float receiver_norm[NUM_CHANNELS];
+int32_t receiver_norm[NUM_CHANNELS]; // normalized to fixed point [-10000, 10000] range.
 int actuator_pos[NUM_CHANNELS];
 
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53

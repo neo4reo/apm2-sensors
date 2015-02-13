@@ -49,8 +49,26 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
   int counter = 0;
   bool result = false;
 
-  if ( id == ACTUATOR_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
-    /* actuator commands are 2 bytes, lo byte first, then hi byte.  Integer values correspond to servo pulse lenght in us
+  if ( id == FLIGHT_COMMAND_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
+    /* flight commands are 2 bytes, lo byte first, then hi byte.  Integer values correspond to servo pulse lenght in us
+     * 1100 is a normal minimum value, 1500 is center, 1900 is a normal maximum value although the min and max can be extended
+     * a bit. */
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        byte lo = buf[counter++];
+        byte hi = buf[counter++];
+        autopilot_raw[i] = hi*256 + lo;
+    }
+    // if we are in autopilot mode (determined elsewhere when each new receiver frame is ready)
+    // then mix the inputs and write the actuator outputs now
+    if ( receiver_raw[CH_8] < 1500 ) {
+        raw2norm( autopilot_raw, autopilot_norm );
+        mixing_update( autopilot_norm );
+        actuator_update();
+    }
+    result = true;
+  // deprecated old direct drive command ....
+  } else if ( id == ACTUATOR_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
+    /* actuator commands are 2 bytes, lo byte first, then hi byte.  Integer values correspond to servo pulse lengthapm2 in us
      * 1100 is a normal minimum value, 1500 is center, 1900 is a normal maximum value although the min and max can be extended
      * a bit. */
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
@@ -291,11 +309,9 @@ void write_pilot_in_ascii()
     // receiver input data
     Serial.print("RCIN:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.printf("%6.1f%% ", receiver_norm[i] * 100.0);
-        //Serial.printf("%ld ", receiver_norm[i]);
+        Serial.printf("%4d ", receiver_raw[i]);
     }
-    Serial.printf("%6.1f%%", receiver_norm[NUM_CHANNELS-1] * 100.0);
-    //Serial.printf("%ld", receiver_norm[NUM_CHANNELS-1]);
+    Serial.printf("%4d", receiver_raw[NUM_CHANNELS-1]);
     Serial.println();
 }
 

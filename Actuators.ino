@@ -20,7 +20,7 @@ bool mix_throttle_trim = false;
 bool mix_flap_trim = false;
 bool mix_elevon = false;
 bool mix_flaperon = false;
-bool mix_vtail = true;
+bool mix_vtail = false;
 
 float mix_Gac = 0.5; // aileron gain for autocoordination
 float mix_Get = -0.1; // elevator trim w/ throttle gain
@@ -98,6 +98,42 @@ int mixing_command_parse(byte *buf) {
 }
 
 
+// compute normalized command values from the raw pwm values
+int raw2norm( int raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        // convert to normalized form
+        if ( symmetrical[i] ) {
+            // i.e. aileron, rudder, elevator
+	    norm[i] = (float)(raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
+        } else {
+	    // i.e. throttle, flaps
+	    norm[i] = (float)(raw[i] - PWM_MIN) / PWM_RANGE;
+        }
+    }
+}
+
+
+// compute raw pwm values from normalized command values
+int norm2raw( float norm[NUM_CHANNELS], int raw[NUM_CHANNELS] ) {
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        // convert to pulse length (special case ch6 when in flaperon mode)
+        if ( symmetrical[i] || (i == 5 && mix_flaperon) ) {
+            // i.e. aileron, rudder, elevator
+	    raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i]);
+        } else {
+	    // i.e. throttle, flaps
+	    raw[i] = PWM_MIN + (int)(PWM_RANGE * norm[i]);
+        }
+        if ( raw[i] < PWM_MIN ) {
+            raw[i] = PWM_MIN;
+        }
+        if ( raw[i] > PWM_MAX ) {
+            raw[i] = PWM_MAX;
+        }
+    }
+}
+
+
 // compute the actuator (servo) values for each channel.  Handle all the requested mixing modes here.
 void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch8 = false ) {
     aileron_cmd = control_norm[0];
@@ -147,29 +183,25 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch8 = false ) {
         actuator_norm[1] = mix_Ge * elevator_cmd + mix_Gr * rudder_cmd;
         actuator_norm[3] = mix_Ge * elevator_cmd - mix_Gr * rudder_cmd;
     }
+    
+    // compute raw actuator output values from the normalized values
+    norm2raw( actuator_norm, actuator_raw );
 }
 
 
 // read the receiver if new data is available.  If manual mode requested, immediate do the mixing and send the result to the servos
-int receiver_read() {
+int receiver_process() {
     // New radio frame?
     if ( APM_RC.GetState() == 1 ) {
         // read channel data
 	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
             // save raw pulse value
             receiver_raw[i] = APM_RC.InputCh(i);
-            // convert to normalized form
-            if ( symmetrical[i] ) {
-                // i.e. aileron, rudder, elevator
-	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
-            } else {
-	        // i.e. throttle, flaps
-	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_MIN) / PWM_RANGE;
-            }
 	}
  
         if ( receiver_raw[CH_8] > 1500 ) {
             // manual pass through requested, let's get it done right now
+            raw2norm( receiver_raw, receiver_norm );
             mixing_update( receiver_norm );
             actuator_update();
         }
@@ -179,26 +211,8 @@ int receiver_read() {
 }
 
 
-
-// write the actuator values to the RC system
+// write the raw actuator values to the RC system
 int actuator_update() {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        // convert to pulse length (special case ch6 when in flaperon mode)
-        if ( symmetrical[i] || (i == 5 && mix_flaperon) ) {
-            // i.e. aileron, rudder, elevator
-	    actuator_raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * actuator_norm[i]);
-        } else {
-	    // i.e. throttle, flaps
-	    actuator_raw[i] = PWM_MIN + (int)(PWM_RANGE * actuator_norm[i]);
-        }
-        if ( actuator_raw[i] < PWM_MIN ) {
-            actuator_raw[i] = PWM_MIN;
-        }
-        if ( actuator_raw[i] > PWM_MAX ) {
-            actuator_raw[i] = PWM_MAX;
-        }
-    }
-
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         APM_RC.OutputCh(i, actuator_raw[i] );
     }

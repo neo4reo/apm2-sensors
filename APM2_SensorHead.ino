@@ -1,3 +1,5 @@
+// FIXME: set intial defaults for RC & autopilot inputs
+
 /*
         APM2 Sensor Head Firmware
 	Written by Curtis L. Olson, Airborne Technologies, Inc. colson@atiak.com
@@ -106,8 +108,16 @@ FastSerialPort1(Serial1); // GPS port
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
 APM_RC_APM2 APM_RC;
+
+// flight commands from the RC receiver
 int receiver_raw[NUM_CHANNELS];
 float receiver_norm[NUM_CHANNELS];
+
+// flight commands from the autopilot
+int autopilot_raw[NUM_CHANNELS];
+float autopilot_norm[NUM_CHANNELS];
+
+// actuator outputs after mixing
 int actuator_raw[NUM_CHANNELS];
 float actuator_norm[NUM_CHANNELS];
 
@@ -239,14 +249,12 @@ void loop()
     while ( millis() < loop_timer ); // busy wait for next frame
     loop_timer += dt_millis;
     
-    // Fetch new radio frame
-    receiver_read();
+    // Fetch new radio frame (and if manual override set, mix the
+    // inputs and write the actuator commands to the APM2_RC system)
+    receiver_process();
     
     // suck in any host commmands    
     while ( read_commands() );
-
-    // compute outputs (possibly with mixing)
-    actuator_update();
 
     // IMU Update
     imu.update();
@@ -278,8 +286,8 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        // write_pilot_in_ascii();
-        write_actuator_out_ascii();
+        write_pilot_in_ascii();
+        // write_actuator_out_ascii();
         // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();

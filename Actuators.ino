@@ -1,3 +1,5 @@
+// FIXME: channel 8 management between auto/manual
+
 #define PWM_CENTER 1500
 #define PWM_HALF_RANGE 450
 #define PWM_RANGE (PWM_HALF_RANGE * 2)
@@ -18,7 +20,7 @@ bool mix_throttle_trim = false;
 bool mix_flap_trim = false;
 bool mix_elevon = false;
 bool mix_flaperon = false;
-bool mix_vtail = false;
+bool mix_vtail = true;
 
 float mix_Gac = 0.5; // aileron gain for autocoordination
 float mix_Get = -0.1; // elevator trim w/ throttle gain
@@ -65,72 +67,90 @@ void mixing_defaults() {
 
 
 int mixing_command_parse(byte *buf) {
-  float g1 = *(int16_t *)(buf[1]) / 32767;
-  float g2 = *(int16_t *)(buf[3]) / 32767;
-  if ( buf[0] == MIX_DEFAULTS ) {
-    mixing_defaults();
-  } else if ( buf[0] == MIX_AUTOCOORDINATE ) {
-    mix_autocoord = true;
-    mix_Gac = g1;
-  } else if ( buf[0] == MIX_THROTTLE_TRIM ) {
-    mix_throttle_trim = true;
-    mix_Get = g1;
-  } else if ( buf[0] == MIX_FLAP_TRIM ) {
-    mix_flap_trim = true;
-    mix_Gef = g1;
-  } else if ( buf[0] == MIX_ELEVONS ) {
-    mix_elevon = true;
-    mix_Ga = g1;
-    mix_Ge = g2;
-  } else if ( buf[0] == MIX_FLAPERONS ) {
-    mix_flaperon = true;
-    mix_Ga = g1;
-    mix_Gf = g2;
-  } else if ( buf[0] == MIX_VTAIL ) {
-    mix_vtail = true;
-    mix_Ge = g1;
-    mix_Gr = g2;
-  }
-}
-
-
-void mixing_update() {
-  // mixing modes that work at the 'command' level
-  if ( mix_autocoord ) {
-    rudder_cmd += mix_Gac * aileron_cmd;
-  }
-  if ( mix_throttle_trim ) {
-    elevator_cmd += mix_Get * throttle_cmd;
-  }
-  if ( mix_flap_trim ) {
-    elevator_cmd += mix_Gef * flap_cmd;
-  }
+    float g1 = *(int16_t *)(buf[1]) / 32767;
+    float g2 = *(int16_t *)(buf[3]) / 32767;
+    if ( buf[0] == MIX_DEFAULTS ) {
+        mixing_defaults();
+    } else if ( buf[0] == MIX_AUTOCOORDINATE ) {
+        mix_autocoord = true;
+        mix_Gac = g1;
+    } else if ( buf[0] == MIX_THROTTLE_TRIM ) {
+        mix_throttle_trim = true;
+        mix_Get = g1;
+    } else if ( buf[0] == MIX_FLAP_TRIM ) {
+        mix_flap_trim = true;
+        mix_Gef = g1;
+    } else if ( buf[0] == MIX_ELEVONS ) {
+        mix_elevon = true;
+        mix_Ga = g1;
+        mix_Ge = g2;
+    } else if ( buf[0] == MIX_FLAPERONS ) {
+        mix_flaperon = true;
+        mix_Ga = g1;
+        mix_Gf = g2;
+    } else if ( buf[0] == MIX_VTAIL ) {
+        mix_vtail = true;
+        mix_Ge = g1;
+        mix_Gr = g2;
+    }
   
-  // copy default assignments as if no mixing
-  actuator_norm[0] = aileron_cmd;
-  actuator_norm[1] = elevator_cmd;
-  actuator_norm[2] = throttle_cmd;
-  actuator_norm[3] = rudder_cmd;
-  actuator_norm[4] = gear_cmd;
-  actuator_norm[5] = flap_cmd;
-  actuator_norm[6] = receiver_norm[6];
-  actuator_norm[7] = receiver_norm[7];
-
-  // elevon and flaperon mixing are mutually exclusive
-  if ( mix_elevon ) {
-    actuator_norm[0] = mix_Ga * aileron_cmd + mix_Ge * elevator_cmd;
-    actuator_norm[1] = mix_Ga * aileron_cmd - mix_Ge * elevator_cmd;
-  } else if ( mix_flaperon ) {
-    actuator_norm[0] = mix_Ga * aileron_cmd + mix_Gf * flap_cmd;
-    actuator_norm[6] = mix_Ga * aileron_cmd - mix_Gf * flap_cmd;
-  }
-  // vtail mixing can't work with elevon mixing
-  if ( mix_vtail && !mix_elevon) {
-    actuator_norm[1] = mix_Ge * elevator_cmd + mix_Gr * rudder_cmd;
-    actuator_norm[3] = mix_Ge * elevator_cmd - mix_Gr * rudder_cmd;
-  }
+    return 0;
 }
 
+
+// compute the actuator (servo) values for each channel.  Handle all the requested mixing modes here.
+void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch8 = false ) {
+    aileron_cmd = control_norm[0];
+    elevator_cmd = control_norm[1];
+    throttle_cmd = control_norm[2];
+    rudder_cmd = control_norm[3];
+    gear_cmd = control_norm[4];
+    flap_cmd = control_norm[5];
+    ch7_cmd = control_norm[6];
+    if ( do_ch8 ) {
+        ch8_cmd = control_norm[7];
+    }
+        
+    // mixing modes that work at the 'command' level (before actuator value assignment)
+    if ( mix_autocoord ) {
+        rudder_cmd += mix_Gac * aileron_cmd;
+    }
+    if ( mix_throttle_trim ) {
+        elevator_cmd += mix_Get * throttle_cmd;
+    }
+    if ( mix_flap_trim ) {
+        elevator_cmd += mix_Gef * flap_cmd;
+    }
+  
+    // copy default assignments as if no mixing
+    actuator_norm[0] = aileron_cmd;
+    actuator_norm[1] = elevator_cmd;
+    actuator_norm[2] = throttle_cmd;
+    actuator_norm[3] = rudder_cmd;
+    actuator_norm[4] = gear_cmd;
+    actuator_norm[5] = flap_cmd;
+    actuator_norm[6] = ch7_cmd;
+    if ( do_ch8 ) {
+        actuator_norm[7] = ch8_cmd;
+    }
+    
+    // elevon and flaperon mixing are mutually exclusive
+    if ( mix_elevon ) {
+        actuator_norm[0] = mix_Ga * aileron_cmd + mix_Ge * elevator_cmd;
+        actuator_norm[1] = mix_Ga * aileron_cmd - mix_Ge * elevator_cmd;
+    } else if ( mix_flaperon ) {
+        actuator_norm[0] = mix_Ga * aileron_cmd + mix_Gf * flap_cmd;
+        actuator_norm[5] = mix_Ga * aileron_cmd - mix_Gf * flap_cmd;
+    }
+    // vtail mixing can't work with elevon mixing
+    if ( mix_vtail && !mix_elevon) {
+        actuator_norm[1] = mix_Ge * elevator_cmd + mix_Gr * rudder_cmd;
+        actuator_norm[3] = mix_Ge * elevator_cmd - mix_Gr * rudder_cmd;
+    }
+}
+
+
+// read the receiver if new data is available.  If manual mode requested, immediate do the mixing and send the result to the servos
 int receiver_read() {
     // New radio frame?
     if ( APM_RC.GetState() == 1 ) {
@@ -144,34 +164,44 @@ int receiver_read() {
 	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
             } else {
 	        // i.e. throttle, flaps
-	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_MIN) / (int32_t)PWM_RANGE;
+	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_MIN) / PWM_RANGE;
             }
 	}
-        aileron_cmd = receiver_norm[0];
-        elevator_cmd = receiver_norm[1];
-        throttle_cmd = receiver_norm[2];
-        rudder_cmd = receiver_norm[3];
-        flap_cmd = receiver_norm[5];
+ 
+        if ( receiver_raw[CH_8] > 1500 ) {
+            // manual pass through requested, let's get it done right now
+            mixing_update( receiver_norm );
+            actuator_update();
+        }
         return 1;
     }
     return 0;
 }
 
 
-int actuators_update() {
-    if ( receiver_raw[CH_8] > 1500 ) {
-        // manual pass through
-        for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-            APM_RC.OutputCh(i, receiver_raw[i] );
+
+// write the actuator values to the RC system
+int actuator_update() {
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        // convert to pulse length (special case ch6 when in flaperon mode)
+        if ( symmetrical[i] || (i == 5 && mix_flaperon) ) {
+            // i.e. aileron, rudder, elevator
+	    actuator_raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * actuator_norm[i]);
+        } else {
+	    // i.e. throttle, flaps
+	    actuator_raw[i] = PWM_MIN + (int)(PWM_RANGE * actuator_norm[i]);
         }
-        APM_RC.OutputCh(CH_8, actuator_raw[CH_8] );
-    } else {
-        // autopilot control
-        for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-            APM_RC.OutputCh(i, actuator_raw[i] );
+        if ( actuator_raw[i] < PWM_MIN ) {
+            actuator_raw[i] = PWM_MIN;
+        }
+        if ( actuator_raw[i] > PWM_MAX ) {
+            actuator_raw[i] = PWM_MAX;
         }
     }
 
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        APM_RC.OutputCh(i, actuator_raw[i] );
+    }
 
     return 0;
 }

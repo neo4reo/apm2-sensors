@@ -288,7 +288,7 @@ void write_pilot_in_bin()
 
 void write_pilot_in_ascii()
 {
-    // output servo data
+    // receiver input data
     Serial.print("RCIN:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
         Serial.printf("%6.1f%% ", receiver_norm[i] * 100.0);
@@ -296,6 +296,17 @@ void write_pilot_in_ascii()
     }
     Serial.printf("%6.1f%%", receiver_norm[NUM_CHANNELS-1] * 100.0);
     //Serial.printf("%ld", receiver_norm[NUM_CHANNELS-1]);
+    Serial.println();
+}
+
+void write_actuator_out_ascii()
+{
+    // actuator output
+    Serial.print("RCOUT:");
+    for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
+        Serial.printf("%4d ", actuator_raw[i]);
+    }
+    Serial.printf("%4d", actuator_raw[NUM_CHANNELS-1]);
     Serial.println();
 }
 

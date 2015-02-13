@@ -60,7 +60,7 @@
 #define B_LED_PIN        26
 #define C_LED_PIN        25
 #define LED_ON           LOW
-# define LED_OFF          HIGH
+#define LED_OFF          HIGH
 
 #define PITOT_SOURCE_ANALOG_PIN 0
 #define CURRENT1_ANALOG_PIN 1 /* A12 if power module port used */
@@ -246,7 +246,7 @@ void loop()
     while ( read_commands() );
 
     // compute outputs (possibly with mixing)
-    actuators_update();
+    actuator_update();
 
     // IMU Update
     imu.update();
@@ -278,7 +278,8 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        write_pilot_in_ascii();
+        // write_pilot_in_ascii();
+        write_actuator_out_ascii();
         // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();

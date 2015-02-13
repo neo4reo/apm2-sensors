@@ -32,6 +32,17 @@ float mix_Gr = 1.0; // rudder gain for vtail
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
 bool symmetrical[NUM_CHANNELS] = {1, 1, 0, 1, 0, 0, 0, 0};
 
+// official flight command values.  These could source from the RC receiver or the autopilot depending on the auto/manual
+// selection switch state.  These are pre-mix commands and will be mixed and written to the actuators for both manual and
+// autonomous flight modes.
+float aileron_cmd = 0.0;
+float elevator_cmd = 0.0;
+float throttle_cmd = 0.0;
+float rudder_cmd = 0.0;
+float gear_cmd = 0.0;
+float flap_cmd = 0.0;
+float ch7_cmd = 0.0;
+float ch8_cmd = 0.0;
 
 // reset mixing parameters to startup defaults
 void mixing_defaults() {
@@ -84,12 +95,40 @@ int mixing_command_parse(byte *buf) {
 
 
 void mixing_update() {
-    //for ( int j = 0; j < NUM_CHANNELS; j++ ) {
-    //    actuator_norm[j] = 0.0;
-    //    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-    //        actuator_norm[j] += mix_gains[ireceiver_norm[i]
-    //    }
-    //}
+  // mixing modes that work at the 'command' level
+  if ( mix_autocoord ) {
+    rudder_cmd += mix_Gac * aileron_cmd;
+  }
+  if ( mix_throttle_trim ) {
+    elevator_cmd += mix_Get * throttle_cmd;
+  }
+  if ( mix_flap_trim ) {
+    elevator_cmd += mix_Gef * flap_cmd;
+  }
+  
+  // copy default assignments as if no mixing
+  actuator_norm[0] = aileron_cmd;
+  actuator_norm[1] = elevator_cmd;
+  actuator_norm[2] = throttle_cmd;
+  actuator_norm[3] = rudder_cmd;
+  actuator_norm[4] = gear_cmd;
+  actuator_norm[5] = flap_cmd;
+  actuator_norm[6] = receiver_norm[6];
+  actuator_norm[7] = receiver_norm[7];
+
+  // elevon and flaperon mixing are mutually exclusive
+  if ( mix_elevon ) {
+    actuator_norm[0] = mix_Ga * aileron_cmd + mix_Ge * elevator_cmd;
+    actuator_norm[1] = mix_Ga * aileron_cmd - mix_Ge * elevator_cmd;
+  } else if ( mix_flaperon ) {
+    actuator_norm[0] = mix_Ga * aileron_cmd + mix_Gf * flap_cmd;
+    actuator_norm[6] = mix_Ga * aileron_cmd - mix_Gf * flap_cmd;
+  }
+  // vtail mixing can't work with elevon mixing
+  if ( mix_vtail && !mix_elevon) {
+    actuator_norm[1] = mix_Ge * elevator_cmd + mix_Gr * rudder_cmd;
+    actuator_norm[3] = mix_Ge * elevator_cmd - mix_Gr * rudder_cmd;
+  }
 }
 
 int receiver_read() {
@@ -102,12 +141,17 @@ int receiver_read() {
             // convert to normalized form
             if ( symmetrical[i] ) {
                 // i.e. aileron, rudder, elevator
-	        receiver_norm[i] = ((int32_t)receiver_raw[i] - PWM_CENTER) * 10000 / PWM_HALF_RANGE;
+	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
             } else {
 	        // i.e. throttle, flaps
-	        receiver_norm[i] = ((int32_t)receiver_raw[i] - PWM_MIN) * 10000 / (int32_t)PWM_RANGE;
+	        receiver_norm[i] = (float)(receiver_raw[i] - PWM_MIN) / (int32_t)PWM_RANGE;
             }
 	}
+        aileron_cmd = receiver_norm[0];
+        elevator_cmd = receiver_norm[1];
+        throttle_cmd = receiver_norm[2];
+        rudder_cmd = receiver_norm[3];
+        flap_cmd = receiver_norm[5];
         return 1;
     }
     return 0;
@@ -120,11 +164,11 @@ int actuators_update() {
         for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
             APM_RC.OutputCh(i, receiver_raw[i] );
         }
-        APM_RC.OutputCh(CH_8, actuator_pos[CH_8] );
+        APM_RC.OutputCh(CH_8, actuator_raw[CH_8] );
     } else {
         // autopilot control
         for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-            APM_RC.OutputCh(i, actuator_pos[i] );
+            APM_RC.OutputCh(i, actuator_raw[i] );
         }
     }
 

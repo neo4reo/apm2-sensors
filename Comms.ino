@@ -56,7 +56,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
       byte lo = buf[counter++];
       byte hi = buf[counter++];
-      actuator_pos[i] = hi*256 + lo;
+      actuator_raw[i] = hi*256 + lo;
     }
     result = true;
 // disable baud changing until I have more time to work out the nuances
@@ -291,10 +291,10 @@ void write_pilot_in_ascii()
     // output servo data
     Serial.print("RCIN:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.printf("%6.1f%% ", receiver_norm[i] / 100.0);
+        Serial.printf("%6.1f%% ", receiver_norm[i] * 100.0);
         //Serial.printf("%ld ", receiver_norm[i]);
     }
-    Serial.printf("%6.1f%%", receiver_norm[NUM_CHANNELS-1] / 100.0);
+    Serial.printf("%6.1f%%", receiver_norm[NUM_CHANNELS-1] * 100.0);
     //Serial.printf("%ld", receiver_norm[NUM_CHANNELS-1]);
     Serial.println();
 }

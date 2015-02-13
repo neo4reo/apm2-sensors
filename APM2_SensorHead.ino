@@ -107,8 +107,9 @@ bool binary_output = false; // start with ascii output (then switch to binary if
 
 APM_RC_APM2 APM_RC;
 int receiver_raw[NUM_CHANNELS];
-int32_t receiver_norm[NUM_CHANNELS]; // normalized to fixed point [-10000, 10000] range.
-int actuator_pos[NUM_CHANNELS];
+float receiver_norm[NUM_CHANNELS];
+int actuator_raw[NUM_CHANNELS];
+float actuator_norm[NUM_CHANNELS];
 
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
 AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
@@ -174,9 +175,9 @@ void setup()
     APM_RC.Init(&isr_registry);	 // APM Radio initialization
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         APM_RC.enable_out(i);
-        actuator_pos[i] = 1500;
+        actuator_raw[i] = 1500;
     }
-    actuator_pos[2] = 1111;  // (special case) throttle to minimum.
+    actuator_raw[2] = 1111;  // (special case) throttle to minimum.
     
     // set the PWM output rateas as defined above
     uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);

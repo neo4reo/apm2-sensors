@@ -1,4 +1,4 @@
-// FIXME: channel 8 management between auto/manual
+// Module to handle actuator input/output and mixing.
 
 #define PWM_CENTER 1500
 #define PWM_HALF_RANGE 450
@@ -135,14 +135,16 @@ int norm2raw( float norm[NUM_CHANNELS], int raw[NUM_CHANNELS] ) {
 
 
 // compute the actuator (servo) values for each channel.  Handle all the requested mixing modes here.
-void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch8 = false ) {
-    aileron_cmd = control_norm[0];
-    elevator_cmd = control_norm[1];
-    throttle_cmd = control_norm[2];
-    rudder_cmd = control_norm[3];
-    gear_cmd = control_norm[4];
-    flap_cmd = control_norm[5];
-    ch7_cmd = control_norm[6];
+void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_7, bool do_ch8 ) {
+    if ( do_ch1_7 ) {
+        aileron_cmd = control_norm[0];
+        elevator_cmd = control_norm[1];
+        throttle_cmd = control_norm[2];
+        rudder_cmd = control_norm[3];
+        gear_cmd = control_norm[4];
+        flap_cmd = control_norm[5];
+        ch7_cmd = control_norm[6];
+    }
     if ( do_ch8 ) {
         ch8_cmd = control_norm[7];
     }
@@ -159,13 +161,15 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch8 = false ) {
     }
   
     // copy default assignments as if no mixing
-    actuator_norm[0] = aileron_cmd;
-    actuator_norm[1] = elevator_cmd;
-    actuator_norm[2] = throttle_cmd;
-    actuator_norm[3] = rudder_cmd;
-    actuator_norm[4] = gear_cmd;
-    actuator_norm[5] = flap_cmd;
-    actuator_norm[6] = ch7_cmd;
+    if ( do_ch1_7 ) {
+        actuator_norm[0] = aileron_cmd;
+        actuator_norm[1] = elevator_cmd;
+        actuator_norm[2] = throttle_cmd;
+        actuator_norm[3] = rudder_cmd;
+        actuator_norm[4] = gear_cmd;
+        actuator_norm[5] = flap_cmd;
+        actuator_norm[6] = ch7_cmd;
+    }
     if ( do_ch8 ) {
         actuator_norm[7] = ch8_cmd;
     }
@@ -202,7 +206,7 @@ int receiver_process() {
         if ( receiver_raw[CH_8] > 1500 ) {
             // manual pass through requested, let's get it done right now
             raw2norm( receiver_raw, receiver_norm );
-            mixing_update( receiver_norm );
+            mixing_update( receiver_norm, true /* ch1-7 */, false /* no ch8 */ );
             actuator_update();
         }
         return 1;

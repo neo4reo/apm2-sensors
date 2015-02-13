@@ -58,12 +58,20 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
         byte hi = buf[counter++];
         autopilot_raw[i] = hi*256 + lo;
     }
-    // if we are in autopilot mode (determined elsewhere when each new receiver frame is ready)
-    // then mix the inputs and write the actuator outputs now
+    raw2norm( autopilot_raw, autopilot_norm );
+    
     if ( receiver_raw[CH_8] < 1500 ) {
-        raw2norm( autopilot_raw, autopilot_norm );
-        mixing_update( autopilot_norm );
+        // autopilot mode active (determined elsewhere when each new receiver frame is ready)
+        // mix the inputs and write the actuator outputs now
+        mixing_update( autopilot_norm, true /* ch1-7 */, true /* no ch8 */ );
         actuator_update();
+    } else {
+        // we are in manual mode
+        // update ch8 only from the autopilot.  We don't pass the auto/manual switch state through to a servo.
+        // Instead we simply relay ch8 from the autopilot to the actuator which gives the autopilot an extra useful
+        // output channel.  This channel is always driven by the autopilot, no matter what the state, but we'll let
+        // the output to the APM_RC wait until it happens automatically with the next receiver frame.
+        mixing_update( autopilot_norm, false /* ch1-7 */, true /* no ch8 */ );
     }
     result = true;
   // deprecated old direct drive command ....

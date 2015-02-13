@@ -99,7 +99,7 @@ int mixing_command_parse(byte *buf) {
 
 
 // compute normalized command values from the raw pwm values
-int raw2norm( int raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
+void raw2norm( int raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to normalized form
         if ( symmetrical[i] ) {
@@ -114,7 +114,7 @@ int raw2norm( int raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
 
 
 // compute raw pwm values from normalized command values
-int norm2raw( float norm[NUM_CHANNELS], int raw[NUM_CHANNELS] ) {
+void norm2raw( float norm[NUM_CHANNELS], int raw[NUM_CHANNELS] ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to pulse length (special case ch6 when in flaperon mode)
         if ( symmetrical[i] || (i == 5 && mix_flaperon) ) {

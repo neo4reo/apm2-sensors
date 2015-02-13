@@ -215,6 +215,20 @@ int receiver_process() {
 }
 
 
+// set default raw actuator values
+void actuator_set_defaults() {
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        if ( symmetrical[i] ) {
+            // i.e. aileron, rudder, elevator
+	    actuator_raw[i] = PWM_CENTER;
+        } else {
+            // i.e. throttle, flaps
+    	    actuator_raw[i] = PWM_MIN;
+        }
+    }
+}
+
+
 // write the raw actuator values to the RC system
 int actuator_update() {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {

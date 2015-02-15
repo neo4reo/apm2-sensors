@@ -67,29 +67,30 @@ void mixing_defaults() {
 
 
 int mixing_command_parse(byte *buf) {
-    float g1 = *(int16_t *)(buf[1]) / 32767;
-    float g2 = *(int16_t *)(buf[3]) / 32767;
+    bool enable = buf[1];
+    float g1 = *(int16_t *)(buf[2]) / 10000;
+    float g2 = *(int16_t *)(buf[4]) / 10000;
     if ( buf[0] == MIX_DEFAULTS ) {
         mixing_defaults();
     } else if ( buf[0] == MIX_AUTOCOORDINATE ) {
-        mix_autocoord = true;
+        mix_autocoord = enable;
         mix_Gac = g1;
     } else if ( buf[0] == MIX_THROTTLE_TRIM ) {
-        mix_throttle_trim = true;
+        mix_throttle_trim = enable;
         mix_Get = g1;
     } else if ( buf[0] == MIX_FLAP_TRIM ) {
-        mix_flap_trim = true;
+        mix_flap_trim = enable;
         mix_Gef = g1;
     } else if ( buf[0] == MIX_ELEVONS ) {
-        mix_elevon = true;
+        mix_elevon = enable;
         mix_Ga = g1;
         mix_Ge = g2;
     } else if ( buf[0] == MIX_FLAPERONS ) {
-        mix_flaperon = true;
+        mix_flaperon = enable;
         mix_Ga = g1;
         mix_Gf = g2;
     } else if ( buf[0] == MIX_VTAIL ) {
-        mix_vtail = true;
+        mix_vtail = enable;
         mix_Ge = g1;
         mix_Gr = g2;
     }

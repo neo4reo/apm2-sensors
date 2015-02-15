@@ -1,3 +1,6 @@
+
+
+
 /* Binary I/O section: generial info ...
  * Packets start with two bytes ... START_OF_MSG0 and START_OF_MSG1
  * Following that is the packet ID
@@ -74,21 +77,11 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
         mixing_update( autopilot_norm, false /* ch1-7 */, true /* no ch8 */ );
     }
     result = true;
-  // deprecated old direct drive command ....
-  } else if ( id == ACTUATOR_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
-    /* actuator commands are 2 bytes, lo byte first, then hi byte.  Integer values correspond to servo pulse lengthapm2 in us
-     * 1100 is a normal minimum value, 1500 is center, 1900 is a normal maximum value although the min and max can be extended
-     * a bit. */
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-      byte lo = buf[counter++];
-      byte hi = buf[counter++];
-      actuator_raw[i] = hi*256 + lo;
-    }
-    result = true;
-// disable baud changing until I have more time to work out the nuances
-// seems like when the remote end closes and reopens at the new baud, this side
-// may get reset and put back to 115,200 and the whole app starts over.
+
 #if 0
+  // disable baud changing until I have more time to work out the nuances
+  // seems like when the remote end closes and reopens at the new baud, this side
+  // may get reset and put back to 115,200 and the whole app starts over.
   } else if ( id == BAUD_PACKET_ID && message_size == 4 ) {
     //Serial.println("read Baud command");
     /* of course changing baud could can break communication until the requesting side changes it's
@@ -111,6 +104,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
     
     result = true;
 #endif
+
   } else if ( id == PWM_RATE_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
     //Serial.println("read PWM command");
     /* note that CH1/CH2, CH3/CH4/CH5, and CH6/CH7/CH8 run off grouped timers so setting any of the group will also
@@ -129,12 +123,12 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
           APM_RC.SetFastOutputChannels( ch_mask, rate );
         }
     }
-    write_ack_bin( id );
+    write_ack_bin( id, 0 );
     
     result = true;
-  } else if ( id == MIX_MODE_PACKET_ID && message_size == 5 ) {
+  } else if ( id == MIX_MODE_PACKET_ID && message_size == 6 ) {
     mixing_command_parse( buf );
-    write_ack_bin( id );
+    write_ack_bin( id, buf[0] /* sub command */ );
   }
 
   return result;
@@ -232,7 +226,7 @@ bool read_commands()
 
 
 /* output an acknowledgement of a message received */
-void write_ack_bin( uint8_t command_id )
+void write_ack_bin( uint8_t command_id, uint8_t subcommand_id )
 {
   byte buf[3];
   byte cksum0, cksum1;
@@ -250,12 +244,13 @@ void write_ack_bin( uint8_t command_id )
   buf[1] = 0;
   Serial.write( buf, 1 );
 
-  // packet length (1 byte)
-  buf[0] = 1;
+  // packet length (2 bytes)
+  buf[0] = 2;
   Serial.write( buf, 1 );
 
   // ack id
   packet[size++] = command_id;
+  packet[size++] = subcommand_id;
     
   // write packet
   Serial.write( packet, size );

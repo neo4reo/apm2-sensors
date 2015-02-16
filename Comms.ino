@@ -127,8 +127,9 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
     
     result = true;
   } else if ( id == MIX_MODE_PACKET_ID && message_size == 6 ) {
-    mixing_command_parse( buf );
-    write_ack_bin( id, buf[0] /* sub command */ );
+    if ( mixing_command_parse( buf ) ) {
+        write_ack_bin( id, buf[0] /* sub command */ );
+    }
   }
 
   return result;

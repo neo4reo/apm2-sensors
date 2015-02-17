@@ -6,6 +6,20 @@
 #define PWM_MIN (PWM_CENTER - PWM_HALF_RANGE)
 #define PWM_MAX (PWM_CENTER + PWM_HALF_RANGE)
 
+// SAS mode commands (format is cmd(byte), gain)
+#define SAS_DEFAULTS 0
+#define SAS_ROLLAXIS 1
+#define SAS_PITCHAXIS 2
+#define SAS_YAWAXIS 3
+
+bool sas_rollaxis = false;
+bool sas_pitchaxis = false;
+bool sas_yawaxis = false;
+
+float sas_rollgain = 0.0;
+float sas_pitchgain = 0.0;
+float sas_yawgain = 0.0;
+
 // Mix mode commands (format is cmd(byte), gain 1,, gain 2
 #define MIX_DEFAULTS 0
 #define MIX_AUTOCOORDINATE 1
@@ -33,20 +47,6 @@ float mix_Gff = 1.0; // flaps gain for flaperons
 float mix_Gve = 1.0; // elevator gain for vtail
 float mix_Gvr = 1.0; // rudder gain for vtail
 
-// SAS mode commands (format is cmd(byte), gain)
-#define SAS_DEFAULTS 0
-#define SAS_ROLLAXIS 1
-#define SAS_PITCHAXIS 2
-#define SAS_YAWAXIS 3
-
-bool sas_rollaxis = false;
-bool sas_pitchaxis = false;
-bool sas_yawaxis = false;
-
-float sas_rollgain = 0.0;
-float sas_pitchgain = 0.0;
-float sas_yawgain = 0.0;
-
 
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
 bool symmetrical[NUM_CHANNELS] = {1, 1, 0, 1, 0, 0, 0, 0};
@@ -62,6 +62,18 @@ float gear_cmd = 0.0;
 float flap_cmd = 0.0;
 float ch7_cmd = 0.0;
 float ch8_cmd = 0.0;
+
+
+// reset sas parameters to startup defaults
+void sas_defaults() {
+    sas_rollaxis = false;
+    sas_pitchaxis = false;
+    sas_yawaxis = false;
+
+    sas_rollgain = 0.0;
+    sas_pitchgain = 0.0;
+    sas_yawgain = 0.0;
+};
 
 
 // reset mixing parameters to startup defaults
@@ -84,6 +96,35 @@ void mixing_defaults() {
     mix_Gve = 1.0; // elevator gain for vtail
     mix_Gvr = 1.0; // rudder gain for vtail
 };
+
+
+bool sas_command_parse(byte *buf) {
+    bool enable = buf[1];
+    uint8_t lo, hi;
+    uint16_t val;
+
+    lo = buf[2];
+    hi = buf[3];
+    val = hi*256 + lo; 
+    float gain = ((float)val - 32767.0) / 10000.0;
+
+    if ( buf[0] == SAS_DEFAULTS ) {
+        sas_defaults();
+    } else if ( buf[0] == SAS_ROLLAXIS ) {
+        sas_rollaxis = enable;
+        sas_rollgain = gain;
+    } else if ( buf[0] == SAS_PITCHAXIS ) {
+        sas_pitchaxis = enable;
+        sas_pitchgain = gain;
+    } else if ( buf[0] == SAS_YAWAXIS ) {
+        sas_yawaxis = enable;
+        sas_yawgain = gain;
+    } else {
+        return false;
+    }
+    
+    return true;
+}
 
 
 bool mixing_command_parse(byte *buf) {
@@ -132,35 +173,6 @@ bool mixing_command_parse(byte *buf) {
 }
 
 
-bool sas_command_parse(byte *buf) {
-    bool enable = buf[1];
-    uint8_t lo, hi;
-    uint16_t val;
-
-    lo = buf[2];
-    hi = buf[3];
-    val = hi*256 + lo; 
-    float gain = ((float)val - 32767.0) / 10000.0;
-
-    if ( buf[0] == SAS_DEFAULTS ) {
-        mixing_defaults();
-    } else if ( buf[0] == SAS_ROLLAXIS ) {
-        sas_rollaxis = enable;
-        sas_rollgain = gain;
-    } else if ( buf[0] == SAS_PITCHAXIS ) {
-        sas_pitchaxis = enable;
-        sas_pitchgain = gain;
-    } else if ( buf[0] == SAS_YAWAXIS ) {
-        sas_yawaxis = enable;
-        sas_yawgain = gain;
-    } else {
-        return false;
-    }
-    
-    return true;
-}
-
-
 // compute normalized command values from the raw pwm values
 void raw2norm( int raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
@@ -193,6 +205,21 @@ void norm2raw( float norm[NUM_CHANNELS], int raw[NUM_CHANNELS] ) {
         if ( raw[i] > PWM_MAX ) {
             raw[i] = PWM_MAX;
         }
+    }
+}
+
+
+// compute the sas compensation in normalized 'command' space so that we can do proper output channel mixing later
+void sas_update( float control_norm[NUM_CHANNELS] ) {
+    // mixing modes that work at the 'command' level (before actuator value assignment)
+    if ( sas_rollaxis ) {
+        control_norm[0] += sas_rollgain * imu_sensors[0];
+    }
+    if ( sas_pitchaxis ) {
+        control_norm[1] += sas_pitchgain * imu_sensors[1];
+    }
+    if ( sas_yawaxis ) {
+        control_norm[3] += sas_yawgain * imu_sensors[2];
     }
 }
 
@@ -253,21 +280,6 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_7, bool do_ch8
     
     // compute raw actuator output values from the normalized values
     norm2raw( actuator_norm, actuator_raw );
-}
-
-
-// compute the sas compensation in normalized 'command' space so that we can do proper output channel mixing later
-void sas_update( float control_norm[NUM_CHANNELS] ) {
-    // mixing modes that work at the 'command' level (before actuator value assignment)
-    if ( sas_rollaxis ) {
-        control_norm[0] += sas_rollgain * imu_sensors[0];
-    }
-    if ( sas_pitchaxis ) {
-        control_norm[1] += sas_pitchgain * imu_sensors[1];
-    }
-    if ( sas_yawaxis ) {
-        control_norm[2] += sas_yawgain * imu_sensors[2];
-    }
 }
 
 

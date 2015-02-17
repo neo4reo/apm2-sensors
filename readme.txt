@@ -6,7 +6,7 @@ reading RC receiver values in, and driving output servos so for some
 applications it could serve as a robot controller.
 
 
-v2.20 release notes - (work in progress)
+v2.20 release notes - February 17, 2015
 ========================================
 
 The major functionality addition in this release is a simple 3-axis
@@ -23,8 +23,12 @@ The stability augmentation is performed by manipulating the normalized
 input 'commands' and thus will work with any downstream mixing modes
 that may be active for any particular airframe.
 
+The SAS will also work identically in manual or autopilot mode because it 
+is downstream of the flight commands (reciever or autopilot), but upstream
+of the actuator mixing.
 
-v2.10 release notes - February 17, 2015
+
+v2.10 release notes - February 16, 2015
 =======================================
 
 The major functionality change in this release is a move towards doing

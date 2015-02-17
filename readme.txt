@@ -1,4 +1,31 @@
-apm2-sensorhead v2.10 release notes:
+apm2-sensorhead - replacement firmware for an inexpensive APM2 board.
+This firmware converts the APM2 into a standalone sensorhead module
+and adds a full suite of inertial and position sensors to any host
+computer or application.  This firmware maintains APM2 support for
+reading RC receiver values in, and driving output servos so for some
+applications it could serve as a robot controller.
+
+
+v2.20 release notes - (work in progress)
+========================================
+
+The major functionality addition in this release is a simple 3-axis
+stability augmentation system.  Essentially it is:
+
+aileron_cmd += roll_gyro * gain
+elevator_cmd += elevator_gyro * gain
+rudder_cmd += yaw_gyro * gain
+
+Each axis can be enabled/disabled independently and each has it's own
+unique gain value.
+
+The stability augmentation is performed by manipulating the normalized
+input 'commands' and thus will work with any downstream mixing modes
+that may be active for any particular airframe.
+
+
+v2.10 release notes - February 17, 2015
+=======================================
 
 The major functionality change in this release is a move towards doing
 all mixing modes onboard the APM2 rather than on the RC transmitter

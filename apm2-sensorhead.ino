@@ -14,7 +14,7 @@
 ///////////////////77//////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 210
+#define FIRMWARE_REV 220
 
 // Serial number (needs to be updated manually)
 #define SERIAL_NUMBER 12345

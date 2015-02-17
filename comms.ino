@@ -70,6 +70,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	    // autopilot mode active (determined elsewhere when each
 	    // new receiver frame is ready) mix the inputs and write
 	    // the actuator outputs now
+            sas_update( autopilot_norm );
 	    mixing_update( autopilot_norm, true /* ch1-7 */, true /* no ch8 */ );
 	    actuator_update();
 	} else {
@@ -138,6 +139,10 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	result = true;
     } else if ( id == MIX_MODE_PACKET_ID && message_size == 6 ) {
 	if ( mixing_command_parse( buf ) ) {
+	    write_ack_bin( id, buf[0] /* sub command */ );
+	}
+    } else if ( id == SAS_MODE_PACKET_ID && message_size == 4 ) {
+	if ( sas_command_parse( buf ) ) {
 	    write_ack_bin( id, buf[0] /* sub command */ );
 	}
     }

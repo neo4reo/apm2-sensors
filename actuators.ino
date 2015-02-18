@@ -11,14 +11,17 @@
 #define SAS_ROLLAXIS 1
 #define SAS_PITCHAXIS 2
 #define SAS_YAWAXIS 3
+#define SAS_CH7_TUNE 10
 
 bool sas_rollaxis = false;
 bool sas_pitchaxis = false;
 bool sas_yawaxis = false;
+bool sas_ch7tune = false;
 
 float sas_rollgain = 0.0;
 float sas_pitchgain = 0.0;
 float sas_yawgain = 0.0;
+float sas_ch7gain = 2.0;
 
 // Mix mode commands (format is cmd(byte), gain 1,, gain 2
 #define MIX_DEFAULTS 0
@@ -69,10 +72,12 @@ void sas_defaults() {
     sas_rollaxis = false;
     sas_pitchaxis = false;
     sas_yawaxis = false;
+    sas_ch7tune = false;
 
     sas_rollgain = 0.0;
     sas_pitchgain = 0.0;
     sas_yawgain = 0.0;
+    sas_ch7gain = 2.0;
 };
 
 
@@ -119,6 +124,8 @@ bool sas_command_parse(byte *buf) {
     } else if ( buf[0] == SAS_YAWAXIS ) {
         sas_yawaxis = enable;
         sas_yawgain = gain;
+    } else if ( buf[0] == SAS_CH7_TUNE ) {
+        sas_ch7tune = enable;
     } else {
         return false;
     }
@@ -212,14 +219,24 @@ void norm2raw( float norm[NUM_CHANNELS], uint16_t raw[NUM_CHANNELS] ) {
 // compute the sas compensation in normalized 'command' space so that we can do proper output channel mixing later
 void sas_update( float control_norm[NUM_CHANNELS] ) {
     // mixing modes that work at the 'command' level (before actuator value assignment)
+    
+    float tune = 1.0;
+    if ( sas_ch7tune ) {
+        tune = sas_ch7gain * receiver_norm[6];
+        if ( tune < 0.0 ) {
+            tune = 0.0;
+        } else if ( tune > 2.0 ) {
+            tune = 2.0;
+        }
+    } 
     if ( sas_rollaxis ) {
-        control_norm[0] += sas_rollgain * imu_sensors[0];
+        control_norm[0] += tune * sas_rollgain * imu_sensors[0];
     }
     if ( sas_pitchaxis ) {
-        control_norm[1] += sas_pitchgain * imu_sensors[1];
+        control_norm[1] += tune * sas_pitchgain * imu_sensors[1];
     }
     if ( sas_yawaxis ) {
-        control_norm[3] += sas_yawgain * imu_sensors[2];
+        control_norm[3] += tune * sas_yawgain * imu_sensors[2];
     }
 }
 

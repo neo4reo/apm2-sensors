@@ -174,22 +174,22 @@ bool mixing_command_parse(byte *buf) {
 
 
 // compute normalized command values from the raw pwm values
-void raw2norm( int raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
+void raw2norm( uint16_t raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to normalized form
         if ( symmetrical[i] ) {
             // i.e. aileron, rudder, elevator
-	    norm[i] = (float)(raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
+	    norm[i] = (float)((int)raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
         } else {
 	    // i.e. throttle, flaps
-	    norm[i] = (float)(raw[i] - PWM_MIN) / PWM_RANGE;
+	    norm[i] = (float)((int)raw[i] - PWM_MIN) / PWM_RANGE;
         }
     }
 }
 
 
 // compute raw pwm values from normalized command values
-void norm2raw( float norm[NUM_CHANNELS], int raw[NUM_CHANNELS] ) {
+void norm2raw( float norm[NUM_CHANNELS], uint16_t raw[NUM_CHANNELS] ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to pulse length (special case ch6 when in flaperon mode)
         if ( symmetrical[i] || (i == 5 && mix_flaperon) ) {

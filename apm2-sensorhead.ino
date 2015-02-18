@@ -108,15 +108,15 @@ bool binary_output = false; // start with ascii output (then switch to binary if
 APM_RC_APM2 APM_RC;
 
 // flight commands from the RC receiver
-int receiver_raw[NUM_CHANNELS];
+uint16_t receiver_raw[NUM_CHANNELS];
 float receiver_norm[NUM_CHANNELS];
 
 // flight commands from the autopilot
-int autopilot_raw[NUM_CHANNELS];
+uint16_t autopilot_raw[NUM_CHANNELS];
 float autopilot_norm[NUM_CHANNELS];
 
 // actuator outputs after mixing
-int actuator_raw[NUM_CHANNELS];
+uint16_t actuator_raw[NUM_CHANNELS];
 float actuator_norm[NUM_CHANNELS];
 
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
@@ -285,7 +285,7 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        // write_pilot_in_ascii();
+        //write_pilot_in_ascii();
         write_actuator_out_ascii();
         // write_imu_ascii();
         // write_gps_ascii();

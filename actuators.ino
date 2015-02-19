@@ -31,6 +31,7 @@ float sas_ch7gain = 2.0;
 #define MIX_ELEVONS 4
 #define MIX_FLAPERONS 5
 #define MIX_VTAIL 6
+#define MIX_DIFF_THRUST 7
 
 bool mix_autocoord = false;
 bool mix_throttle_trim = false;
@@ -38,6 +39,7 @@ bool mix_flap_trim = false;
 bool mix_elevon = false;
 bool mix_flaperon = false;
 bool mix_vtail = false;
+bool mix_diff_thrust = false;
 
 float mix_Gac = 0.5; // aileron gain for autocoordination
 float mix_Get = -0.1; // elevator trim w/ throttle gain
@@ -49,6 +51,8 @@ float mix_Gfa = 1.0; // aileron gain for flaperons
 float mix_Gff = 1.0; // flaps gain for flaperons
 float mix_Gve = 1.0; // elevator gain for vtail
 float mix_Gvr = 1.0; // rudder gain for vtail
+float mix_Gtt = 1.0; // throttle gain for diff thrust
+float mix_Gtr = 0.1; // rudder gain for diff thrust
 
 
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
@@ -89,6 +93,7 @@ void mixing_defaults() {
     mix_elevon = false;
     mix_flaperon = false;
     mix_vtail = false;
+    mix_diff_thrust = false;
 
     mix_Gac = 0.5; // aileron gain for autocoordination
     mix_Get = -0.1; // elevator trim w/ throttle gain
@@ -100,6 +105,8 @@ void mixing_defaults() {
     mix_Gff = 1.0; // flaps gain for flaperons
     mix_Gve = 1.0; // elevator gain for vtail
     mix_Gvr = 1.0; // rudder gain for vtail
+    mix_Gtt = 1.0; // throttle gain for diff thrust
+    mix_Gtr = 0.1; // rudder gain for diff thrust
 };
 
 
@@ -172,6 +179,10 @@ bool mixing_command_parse(byte *buf) {
         mix_vtail = enable;
         mix_Gve = g1;
         mix_Gvr = g2;
+    } else if ( buf[0] == MIX_DIFF_THRUST ) {
+        mix_diff_thrust = enable;
+        mix_Gtt = g1;
+        mix_Gtr = g2;
     } else {
         return false;
     }
@@ -281,18 +292,24 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_7, bool do_ch8
         actuator_norm[7] = ch8_cmd;
     }
     
-    // elevon and flaperon mixing are mutually exclusive
-    if ( mix_elevon ) {
-        actuator_norm[0] = mix_Gea * aileron_cmd + mix_Gee * elevator_cmd;
-        actuator_norm[1] = mix_Gea * aileron_cmd - mix_Gee * elevator_cmd;
-    } else if ( mix_flaperon ) {
-        actuator_norm[0] = mix_Gfa * aileron_cmd + mix_Gff * flap_cmd;
-        actuator_norm[5] = mix_Gfa * aileron_cmd - mix_Gff * flap_cmd;
-    }
-    // vtail mixing can't work with elevon mixing
-    if ( mix_vtail && !mix_elevon) {
-        actuator_norm[1] = mix_Gve * elevator_cmd + mix_Gvr * rudder_cmd;
-        actuator_norm[3] = mix_Gve * elevator_cmd - mix_Gvr * rudder_cmd;
+    if ( do_ch1_7 ) {
+        // elevon and flaperon mixing are mutually exclusive
+        if ( mix_elevon ) {
+            actuator_norm[0] = mix_Gea * aileron_cmd + mix_Gee * elevator_cmd;
+            actuator_norm[1] = mix_Gea * aileron_cmd - mix_Gee * elevator_cmd;
+        } else if ( mix_flaperon ) {
+            actuator_norm[0] = mix_Gfa * aileron_cmd + mix_Gff * flap_cmd;
+            actuator_norm[5] = mix_Gfa * aileron_cmd - mix_Gff * flap_cmd;
+        }
+        // vtail mixing can't work with elevon mixing
+        if ( mix_vtail && !mix_elevon) {
+            actuator_norm[1] = mix_Gve * elevator_cmd + mix_Gvr * rudder_cmd;
+            actuator_norm[3] = mix_Gve * elevator_cmd - mix_Gvr * rudder_cmd;
+        }
+        if ( mix_diff_thrust ) {
+            actuator_norm[2] = mix_Gtt * throttle_cmd + mix_Gtr * rudder_cmd;
+            actuator_norm[4] = mix_Gtt * throttle_cmd - mix_Gtr * rudder_cmd;
+        }
     }
     
     // compute raw actuator output values from the normalized values
@@ -314,7 +331,7 @@ int receiver_process() {
             // manual pass through requested, let's get it done right now
             raw2norm( receiver_raw, receiver_norm );
             sas_update( receiver_norm );
-            mixing_update( receiver_norm, true /* ch1-7 */, false /* no ch8 */ );
+            mixing_update( receiver_norm, true /* do ch1-7 */, false /* do ch8 */ );
             actuator_update();
         }
         return 1;

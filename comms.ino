@@ -71,7 +71,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	    // new receiver frame is ready) mix the inputs and write
 	    // the actuator outputs now
             sas_update( autopilot_norm );
-	    mixing_update( autopilot_norm, true /* ch1-7 */, true /* no ch8 */ );
+	    mixing_update( autopilot_norm, true /* do ch1-7 */, true /* do ch8 */ );
 	    actuator_update();
 	} else {
 	    // we are in manual mode
@@ -83,7 +83,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	    // autopilot, no matter what the state, but we'll let the
 	    // output to the APM_RC wait until it happens
 	    // automatically with the next receiver frame.
-	    mixing_update( autopilot_norm, false /* ch1-7 */, true /* no ch8 */ );
+	    mixing_update( autopilot_norm, false /* do ch1-7 */, true /* do ch8 */ );
 	}
 	result = true;
 

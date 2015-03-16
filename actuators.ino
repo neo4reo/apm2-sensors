@@ -251,6 +251,8 @@ void sas_update( float control_norm[NUM_CHANNELS] ) {
     }
 }
 
+// FIXME: in autonomous mode we don't want to overwrite transmitter tuning channel with that's activated.
+// How best to handle this so it is clear and simple? what is going on?
 
 // compute the actuator (servo) values for each channel.  Handle all the requested mixing modes here.
 void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_7, bool do_ch8 ) {

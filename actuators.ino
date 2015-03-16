@@ -242,14 +242,16 @@ void sas_update( float control_norm[NUM_CHANNELS] ) {
 
 
 // compute the actuator (servo) values for each channel.  Handle all the requested mixing modes here.
-void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_7, bool do_ch8 ) {
-    if ( do_ch1_7 ) {
+void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_6, bool do_ch7, bool do_ch8 ) {
+    if ( do_ch1_6 ) {
         aileron_cmd = control_norm[0];
         elevator_cmd = control_norm[1];
         throttle_cmd = control_norm[2];
         rudder_cmd = control_norm[3];
         gear_cmd = control_norm[4];
         flap_cmd = control_norm[5];
+    }
+    if ( do_ch7 ) {
         ch7_cmd = control_norm[6];
     }
     if ( do_ch8 ) {
@@ -268,13 +270,15 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_7, bool do_ch8
     }
   
     // copy default assignments as if no mixing
-    if ( do_ch1_7 ) {
+    if ( do_ch1_6 ) {
         actuator_norm[0] = aileron_cmd;
         actuator_norm[1] = elevator_cmd;
         actuator_norm[2] = throttle_cmd;
         actuator_norm[3] = rudder_cmd;
         actuator_norm[4] = gear_cmd;
         actuator_norm[5] = flap_cmd;
+    }
+    if ( do_ch7 ) {
         actuator_norm[6] = ch7_cmd;
     }
     if ( do_ch8 ) {
@@ -314,7 +318,7 @@ int receiver_process() {
             // manual pass through requested, let's get it done right now
             raw2norm( receiver_raw, receiver_norm );
             sas_update( receiver_norm );
-            mixing_update( receiver_norm, true /* ch1-7 */, false /* no ch8 */ );
+            mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );
             actuator_update();
         }
         return 1;

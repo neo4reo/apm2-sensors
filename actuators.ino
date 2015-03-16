@@ -330,12 +330,16 @@ int receiver_process() {
             receiver_raw[i] = APM_RC.InputCh(i);
 	}
  
+        raw2norm( receiver_raw, receiver_norm );
+        
         if ( receiver_raw[CH_8] > 1500 ) {
             // manual pass through requested, let's get it done right now
-            raw2norm( receiver_raw, receiver_norm );
             sas_update( receiver_norm );
             mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );
             actuator_update();
+        } else {
+            // autopilot mode, but let's update the sas gain tuning channel if requested
+            mixing_update( receiver_norm, false /* ch1-6 */, sas_ch7gain /* ch7 */, false /* no ch8 */ );
         }
         return 1;
     }

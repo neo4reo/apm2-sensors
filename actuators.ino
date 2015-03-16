@@ -295,7 +295,7 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_6, bool do_ch7
         actuator_norm[7] = ch8_cmd;
     }
     
-    if ( do_ch1_7 ) {
+    if ( do_ch1_6 ) {
         // elevon and flaperon mixing are mutually exclusive
         if ( mix_elevon ) {
             actuator_norm[0] = mix_Gea * aileron_cmd + mix_Gee * elevator_cmd;

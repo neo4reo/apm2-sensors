@@ -215,7 +215,7 @@ void setup()
     // digitalWrite(40, HIGH);
 
     Serial.println("Initializing gyros ... please keep sensors motionless...");
-    imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
+    imu.init(IMU::NOCAL_START, delay, flash_leds, &timer_scheduler);
     Serial.println("done.");
     delay(100);
 
@@ -286,8 +286,8 @@ void loop()
         write_analog_bin();
     } else {
         //write_pilot_in_ascii();
-        write_actuator_out_ascii();
-        // write_imu_ascii();
+        // write_actuator_out_ascii();
+        write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();

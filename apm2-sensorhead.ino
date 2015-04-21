@@ -191,9 +191,15 @@ void setup()
     // set the PWM output rateas as defined above
     uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
     APM_RC.SetFastOutputChannels( ch_mask, PWM_OUTPUT_HZ );
-
+    
     Serial.begin(DEFAULT_BAUD);
-    Serial.println("APM2 Sensor Head");
+    Serial.println("\nAPM2 Sensor Head");
+    
+    if ( !config_read_eeprom() ) {
+        config_load_defaults();
+        config_write_eeprom();
+    }
+        
     Serial.print("Firmware Revision: ");
     Serial.println(FIRMWARE_REV);
     Serial.print("Serial Number: ");

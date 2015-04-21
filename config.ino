@@ -1,13 +1,10 @@
 #include <EEPROM.h>
 
+#include "config.h"
+
 #define CONFIG_VERSION 1
 
-typedef struct {
-    int version;
-    int serial_number;
-} config_t;
-
-config_t config;
+config_t config;  /* global definition */
 
 int read_serial_number() {
      config.serial_number = 1;
@@ -18,6 +15,8 @@ void config_load_defaults() {
     Serial.printf("Setting default config ...\n");
     config.version = CONFIG_VERSION;
     config.serial_number = 0;
+    mixing_defaults();
+    sas_defaults();
 }
 
 int config_read_eeprom() {

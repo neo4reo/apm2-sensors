@@ -71,7 +71,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	    // the actuator outputs now
             sas_update( autopilot_norm );
             // don't overwrite manual ch7 value if sas_ch7tune enabled
-	    mixing_update( autopilot_norm, true /* ch1-6 */, !sas_ch7tune /* ch7 */, true /* no ch8 */ );
+	    mixing_update( autopilot_norm, true /* ch1-6 */, !config.sas_ch7tune /* ch7 */, true /* no ch8 */ );
 	    actuator_update();
 	} else {
 	    // we are in manual mode
@@ -84,7 +84,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	    // output to the APM_RC wait until it happens
 	    // automatically with the next receiver frame.
             // don't overwrite manual ch7 value if sas_ch7tune enabled
-            mixing_update( autopilot_norm, false /* ch1-6 */, !sas_ch7tune /* ch7 */, true /* no ch8 */ );
+            mixing_update( autopilot_norm, false /* ch1-6 */, !config.sas_ch7tune /* ch7 */, true /* no ch8 */ );
 	}
 	result = true;
 

@@ -97,6 +97,8 @@
 #include <LowPassFilter.h>	// LowPassFilter class (inherits from Filter class)
 #include <AP_Airspeed.h>
 
+#include "config.h"
+
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess timer_scheduler;
 
@@ -203,7 +205,7 @@ void setup()
     Serial.print("Firmware Revision: ");
     Serial.println(FIRMWARE_REV);
     Serial.print("Serial Number: ");
-    Serial.println(SERIAL_NUMBER);
+    Serial.println(config.serial_number);
     delay(100);
     
     Serial.printf("F_CPU=%ld\n", F_CPU);

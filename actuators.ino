@@ -1,5 +1,7 @@
 // Module to handle actuator input/output and mixing.
 
+#include "config.h"
+
 #define PWM_CENTER 1500
 #define PWM_HALF_RANGE 450
 #define PWM_RANGE (PWM_HALF_RANGE * 2)
@@ -12,16 +14,7 @@
 #define SAS_PITCHAXIS 2
 #define SAS_YAWAXIS 3
 #define SAS_CH7_TUNE 10
-
-bool sas_rollaxis = false;
-bool sas_pitchaxis = false;
-bool sas_yawaxis = false;
-bool sas_ch7tune = false;
-
-float sas_rollgain = 0.0;
-float sas_pitchgain = 0.0;
-float sas_yawgain = 0.0;
-float sas_ch7gain = 2.0;
+#define SAS_SAVE 255
 
 // Mix mode commands (format is cmd(byte), gain 1,, gain 2
 #define MIX_DEFAULTS 0
@@ -32,27 +25,7 @@ float sas_ch7gain = 2.0;
 #define MIX_FLAPERONS 5
 #define MIX_VTAIL 6
 #define MIX_DIFF_THRUST 7
-
-bool mix_autocoord = false;
-bool mix_throttle_trim = false;
-bool mix_flap_trim = false;
-bool mix_elevon = false;
-bool mix_flaperon = false;
-bool mix_vtail = false;
-bool mix_diff_thrust = false;
-
-float mix_Gac = 0.5; // aileron gain for autocoordination
-float mix_Get = -0.1; // elevator trim w/ throttle gain
-float mix_Gef = 0.1; // elevator trim w/ flap gain
-
-float mix_Gea = 1.0; // aileron gain for elevons
-float mix_Gee = 1.0; // elevator gain for elevons
-float mix_Gfa = 1.0; // aileron gain for flaperons
-float mix_Gff = 1.0; // flaps gain for flaperons
-float mix_Gve = 1.0; // elevator gain for vtail
-float mix_Gvr = 1.0; // rudder gain for vtail
-float mix_Gtt = 1.0; // throttle gain for diff thrust
-float mix_Gtr = 0.1; // rudder gain for diff thrust
+#define MIX_SAVE 255
 
 
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
@@ -73,40 +46,40 @@ float ch8_cmd = 0.0;
 
 // reset sas parameters to startup defaults
 void sas_defaults() {
-    sas_rollaxis = false;
-    sas_pitchaxis = false;
-    sas_yawaxis = false;
-    sas_ch7tune = false;
+    config.sas_rollaxis = false;
+    config.sas_pitchaxis = false;
+    config.sas_yawaxis = false;
+    config.sas_ch7tune = false;
 
-    sas_rollgain = 0.0;
-    sas_pitchgain = 0.0;
-    sas_yawgain = 0.0;
-    sas_ch7gain = 2.0;
+    config.sas_rollgain = 0.0;
+    config.sas_pitchgain = 0.0;
+    config.sas_yawgain = 0.0;
+    config.sas_ch7gain = 2.0;
 };
 
 
 // reset mixing parameters to startup defaults
 void mixing_defaults() {
-    mix_autocoord = false;
-    mix_throttle_trim = false;
-    mix_flap_trim = false;
-    mix_elevon = false;
-    mix_flaperon = false;
-    mix_vtail = false;
-    mix_diff_thrust = false;
+    config.mix_autocoord = false;
+    config.mix_throttle_trim = false;
+    config.mix_flap_trim = false;
+    config.mix_elevon = false;
+    config.mix_flaperon = false;
+    config.mix_vtail = false;
+    config.mix_diff_thrust = false;
 
-    mix_Gac = 0.5; // aileron gain for autocoordination
-    mix_Get = -0.1; // elevator trim w/ throttle gain
-    mix_Gef = 0.1; // elevator trim w/ flap gain
+    config.mix_Gac = 0.5; // aileron gain for autocoordination
+    config.mix_Get = -0.1; // elevator trim w/ throttle gain
+    config.mix_Gef = 0.1; // elevator trim w/ flap gain
 
-    mix_Gea = 1.0; // aileron gain for elevons
-    mix_Gee = 1.0; // elevator gain for elevons
-    mix_Gfa = 1.0; // aileron gain for flaperons
-    mix_Gff = 1.0; // flaps gain for flaperons
-    mix_Gve = 1.0; // elevator gain for vtail
-    mix_Gvr = 1.0; // rudder gain for vtail
-    mix_Gtt = 1.0; // throttle gain for diff thrust
-    mix_Gtr = 0.1; // rudder gain for diff thrust
+    config.mix_Gea = 1.0; // aileron gain for elevons
+    config.mix_Gee = 1.0; // elevator gain for elevons
+    config.mix_Gfa = 1.0; // aileron gain for flaperons
+    config.mix_Gff = 1.0; // flaps gain for flaperons
+    config.mix_Gve = 1.0; // elevator gain for vtail
+    config.mix_Gvr = 1.0; // rudder gain for vtail
+    config.mix_Gtt = 1.0; // throttle gain for diff thrust
+    config.mix_Gtr = 0.1; // rudder gain for diff thrust
 };
 
 
@@ -123,16 +96,18 @@ bool sas_command_parse(byte *buf) {
     if ( buf[0] == SAS_DEFAULTS ) {
         sas_defaults();
     } else if ( buf[0] == SAS_ROLLAXIS ) {
-        sas_rollaxis = enable;
-        sas_rollgain = gain;
+        config.sas_rollaxis = enable;
+        config.sas_rollgain = gain;
     } else if ( buf[0] == SAS_PITCHAXIS ) {
-        sas_pitchaxis = enable;
-        sas_pitchgain = gain;
+        config.sas_pitchaxis = enable;
+        config.sas_pitchgain = gain;
     } else if ( buf[0] == SAS_YAWAXIS ) {
-        sas_yawaxis = enable;
-        sas_yawgain = gain;
+        config.sas_yawaxis = enable;
+        config.sas_yawgain = gain;
     } else if ( buf[0] == SAS_CH7_TUNE ) {
-        sas_ch7tune = enable;
+        config.sas_ch7tune = enable;
+    } else if ( buf[0] == SAS_SAVE ) {
+        config_write_eeprom();
     } else {
         return false;
     }
@@ -159,30 +134,32 @@ bool mixing_command_parse(byte *buf) {
     if ( buf[0] == MIX_DEFAULTS ) {
         mixing_defaults();
     } else if ( buf[0] == MIX_AUTOCOORDINATE ) {
-        mix_autocoord = enable;
-        mix_Gac = g1;
+        config.mix_autocoord = enable;
+        config.mix_Gac = g1;
     } else if ( buf[0] == MIX_THROTTLE_TRIM ) {
-        mix_throttle_trim = enable;
-        mix_Get = g1;
+        config.mix_throttle_trim = enable;
+        config.mix_Get = g1;
     } else if ( buf[0] == MIX_FLAP_TRIM ) {
-        mix_flap_trim = enable;
-        mix_Gef = g1;
+        config.mix_flap_trim = enable;
+        config.mix_Gef = g1;
     } else if ( buf[0] == MIX_ELEVONS ) {
-        mix_elevon = enable;
-        mix_Gea = g1;
-        mix_Gee = g2;
+        config.mix_elevon = enable;
+        config.mix_Gea = g1;
+        config.mix_Gee = g2;
     } else if ( buf[0] == MIX_FLAPERONS ) {
-        mix_flaperon = enable;
-        mix_Gfa = g1;
-        mix_Gff = g2;
+        config.mix_flaperon = enable;
+        config.mix_Gfa = g1;
+        config.mix_Gff = g2;
     } else if ( buf[0] == MIX_VTAIL ) {
-        mix_vtail = enable;
-        mix_Gve = g1;
-        mix_Gvr = g2;
+        config.mix_vtail = enable;
+        config.mix_Gve = g1;
+        config.mix_Gvr = g2;
     } else if ( buf[0] == MIX_DIFF_THRUST ) {
-        mix_diff_thrust = enable;
-        mix_Gtt = g1;
-        mix_Gtr = g2;
+        config.mix_diff_thrust = enable;
+        config.mix_Gtt = g1;
+        config.mix_Gtr = g2;
+    } else if ( buf[0] == MIX_SAVE ) {
+        config_write_eeprom();
     } else {
         return false;
     }
@@ -210,7 +187,7 @@ void raw2norm( uint16_t raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
 void norm2raw( float norm[NUM_CHANNELS], uint16_t raw[NUM_CHANNELS] ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to pulse length (special case ch6 when in flaperon mode)
-        if ( symmetrical[i] || (i == 5 && mix_flaperon) ) {
+        if ( symmetrical[i] || (i == 5 && config.mix_flaperon) ) {
             // i.e. aileron, rudder, elevator
 	    raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i]);
         } else {
@@ -232,22 +209,22 @@ void sas_update( float control_norm[NUM_CHANNELS] ) {
     // mixing modes that work at the 'command' level (before actuator value assignment)
     
     float tune = 1.0;
-    if ( sas_ch7tune ) {
-        tune = sas_ch7gain * receiver_norm[6];
+    if ( config.sas_ch7tune ) {
+        tune = config.sas_ch7gain * receiver_norm[6];
         if ( tune < 0.0 ) {
             tune = 0.0;
         } else if ( tune > 2.0 ) {
             tune = 2.0;
         }
     } 
-    if ( sas_rollaxis ) {
-        control_norm[0] += tune * sas_rollgain * imu_sensors[0];
+    if ( config.sas_rollaxis ) {
+        control_norm[0] += tune * config.sas_rollgain * imu_sensors[0];
     }
-    if ( sas_pitchaxis ) {
-        control_norm[1] += tune * sas_pitchgain * imu_sensors[1];
+    if ( config.sas_pitchaxis ) {
+        control_norm[1] += tune * config.sas_pitchgain * imu_sensors[1];
     }
-    if ( sas_yawaxis ) {
-        control_norm[3] += tune * sas_yawgain * imu_sensors[2];
+    if ( config.sas_yawaxis ) {
+        control_norm[3] += tune * config.sas_yawgain * imu_sensors[2];
     }
 }
 
@@ -269,14 +246,14 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_6, bool do_ch7
     }
         
     // mixing modes that work at the 'command' level (before actuator value assignment)
-    if ( mix_autocoord ) {
-        rudder_cmd += mix_Gac * aileron_cmd;
+    if ( config.mix_autocoord ) {
+        rudder_cmd += config.mix_Gac * aileron_cmd;
     }
-    if ( mix_throttle_trim ) {
-        elevator_cmd += mix_Get * throttle_cmd;
+    if ( config.mix_throttle_trim ) {
+        elevator_cmd += config.mix_Get * throttle_cmd;
     }
-    if ( mix_flap_trim ) {
-        elevator_cmd += mix_Gef * flap_cmd;
+    if ( config.mix_flap_trim ) {
+        elevator_cmd += config.mix_Gef * flap_cmd;
     }
   
     // copy default assignments as if no mixing
@@ -297,21 +274,21 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_6, bool do_ch7
     
     if ( do_ch1_6 ) {
         // elevon and flaperon mixing are mutually exclusive
-        if ( mix_elevon ) {
-            actuator_norm[0] = mix_Gea * aileron_cmd + mix_Gee * elevator_cmd;
-            actuator_norm[1] = mix_Gea * aileron_cmd - mix_Gee * elevator_cmd;
-        } else if ( mix_flaperon ) {
-            actuator_norm[0] = mix_Gfa * aileron_cmd + mix_Gff * flap_cmd;
-            actuator_norm[5] = mix_Gfa * aileron_cmd - mix_Gff * flap_cmd;
+        if ( config.mix_elevon ) {
+            actuator_norm[0] = config.mix_Gea * aileron_cmd + config.mix_Gee * elevator_cmd;
+            actuator_norm[1] = config.mix_Gea * aileron_cmd - config.mix_Gee * elevator_cmd;
+        } else if ( config.mix_flaperon ) {
+            actuator_norm[0] = config.mix_Gfa * aileron_cmd + config.mix_Gff * flap_cmd;
+            actuator_norm[5] = config.mix_Gfa * aileron_cmd - config.mix_Gff * flap_cmd;
         }
         // vtail mixing can't work with elevon mixing
-        if ( mix_vtail && !mix_elevon) {
-            actuator_norm[1] = mix_Gve * elevator_cmd + mix_Gvr * rudder_cmd;
-            actuator_norm[3] = mix_Gve * elevator_cmd - mix_Gvr * rudder_cmd;
+        if ( config.mix_vtail && !config.mix_elevon) {
+            actuator_norm[1] = config.mix_Gve * elevator_cmd + config.mix_Gvr * rudder_cmd;
+            actuator_norm[3] = config.mix_Gve * elevator_cmd - config.mix_Gvr * rudder_cmd;
         }
-        if ( mix_diff_thrust ) {
-            actuator_norm[2] = mix_Gtt * throttle_cmd + mix_Gtr * rudder_cmd;
-            actuator_norm[4] = mix_Gtt * throttle_cmd - mix_Gtr * rudder_cmd;
+        if ( config.mix_diff_thrust ) {
+            actuator_norm[2] = config.mix_Gtt * throttle_cmd + config.mix_Gtr * rudder_cmd;
+            actuator_norm[4] = config.mix_Gtt * throttle_cmd - config.mix_Gtr * rudder_cmd;
         }
     }
     
@@ -339,7 +316,7 @@ int receiver_process() {
             actuator_update();
         } else {
             // autopilot mode, but let's update the sas gain tuning channel if requested
-            mixing_update( receiver_norm, false /* ch1-6 */, sas_ch7gain /* ch7 */, false /* no ch8 */ );
+            mixing_update( receiver_norm, false /* ch1-6 */, config.sas_ch7gain /* ch7 */, false /* no ch8 */ );
         }
         return 1;
     }

@@ -6,15 +6,14 @@ reading RC receiver values in, and driving output servos so for some
 applications it could serve as a robot controller.
 
 
-v2.20 release notes - February 17, 2015
+v2.20 release notes - April 21, 2015
 ========================================
 
-The major functionality addition in this release is a simple 3-axis
-stability augmentation system.  Essentially it is:
+Add a simple 3-axis stability augmentation system.  Essentially it is:
 
-aileron_cmd += roll_gyro * gain
-elevator_cmd += elevator_gyro * gain
-rudder_cmd += yaw_gyro * gain
+  aileron_cmd += roll_gyro * gain
+  elevator_cmd += elevator_gyro * gain
+  rudder_cmd += yaw_gyro * gain
 
 Each axis can be enabled/disabled independently and each has it's own
 unique gain value.
@@ -26,6 +25,13 @@ that may be active for any particular airframe.
 The SAS will also work identically in manual or autopilot mode because it 
 is downstream of the flight commands (reciever or autopilot), but upstream
 of the actuator mixing.
+
+Add support for reading/writing the setup/configuration/gain values to
+eeprom and loading them automatically at power up.  This eliminates
+the need to send the configuration values to the device every boot.
+Presumably this would enable the device to survive an inflight reboot
+without losing it's config, or even run 'headless' without a host
+computer once it has been setup (i.e. as in a smart RC receiver mode.)
 
 
 v2.10 release notes - February 16, 2015

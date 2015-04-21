@@ -19,14 +19,6 @@
 // Serial number (needs to be updated manually)
 #define SERIAL_NUMBER 12345
 
-// this is the hardware PWM generation rate
-// note the default is 50hz and this is the max we can drive analog servos
-// digital servos should be able to run at 200hz -- 250hz is getting up close to the theoretical maximum
-// of a 100% duty cycle.  Advantage for running this at 200+hz with digital servos is we should catch commanded
-// position changes slightly faster for a slightly more responsive system (emphasis on slightly)
-// TODO: make this configurable via an external command.
-#define PWM_OUTPUT_HZ 50
-
 // this is the master loop update rate
 #define MASTER_HZ 100
 //#define MASTER_HZ 200
@@ -190,10 +182,6 @@ void setup()
     actuator_set_defaults();
     actuator_update();
     
-    // set the PWM output rateas as defined above
-    uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
-    APM_RC.SetFastOutputChannels( ch_mask, PWM_OUTPUT_HZ );
-    
     Serial.begin(DEFAULT_BAUD);
     Serial.println("\nAPM2 Sensor Head");
     
@@ -202,6 +190,12 @@ void setup()
         config_write_eeprom();
     }
         
+    // set the PWM output rateas as defined above
+    uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
+    Serial.print("PWM rate: ");
+    Serial.println(config.pwm_hz);
+    APM_RC.SetFastOutputChannels( ch_mask, config.pwm_hz );
+    
     Serial.print("Firmware Revision: ");
     Serial.println(FIRMWARE_REV);
     Serial.print("Serial Number: ");

@@ -12,19 +12,22 @@ int read_serial_number() {
 };
 
 void config_load_defaults() {
-    Serial.printf("Setting default config ...\n");
+    Serial.println("Setting default config ...");
     config.version = CONFIG_VERSION;
     config.serial_number = 0;
+    config.pwm_hz = DEFAULT_PWM_HZ;
     mixing_defaults();
     sas_defaults();
 }
 
 int config_read_eeprom() {
-    Serial.printf("Loading EEPROM...\n");
     int size = sizeof(config);
     if ( size > E2END - 2 /* checksum */ + 1 ) {
+        Serial.println("ERROR: config structure too large for EEPROM hardware!");
         return 0;
     }
+    Serial.print("Loading EEPROM, bytes: ");
+    Serial.println(size);
     byte *ptr = (byte *)&config;
     for ( int i = 0; i < size; i++ ) {
         *ptr = EEPROM.read(i);
@@ -37,14 +40,14 @@ int config_read_eeprom() {
     byte calc_cksum1 = 0;
     ugear_cksum( START_OF_MSG0 /* arbitrary magic # */, START_OF_MSG1 /* arbitrary magic # */, (byte *)&config, size, &calc_cksum0, &calc_cksum1 );
     if ( read_cksum0 != calc_cksum0 || read_cksum1 != calc_cksum1 ) {
-        Serial.printf("Check sum error ...\n");
+        Serial.println("Check sum error!");
         return 0;
     }
     return 1;
 }
 
 int config_write_eeprom() {
-    Serial.printf("Write EEPROM...\n");
+    Serial.println("Write EEPROM...");
     int size = sizeof(config);
     if ( size > E2END - 2 /* checksum */ + 1 ) {
         return 0;

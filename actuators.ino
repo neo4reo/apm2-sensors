@@ -14,7 +14,6 @@
 #define SAS_PITCHAXIS 2
 #define SAS_YAWAXIS 3
 #define SAS_CH7_TUNE 10
-#define SAS_SAVE 255
 
 // Mix mode commands (format is cmd(byte), gain 1,, gain 2
 #define MIX_DEFAULTS 0
@@ -25,7 +24,6 @@
 #define MIX_FLAPERONS 5
 #define MIX_VTAIL 6
 #define MIX_DIFF_THRUST 7
-#define MIX_SAVE 255
 
 
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
@@ -106,8 +104,6 @@ bool sas_command_parse(byte *buf) {
         config.sas_yawgain = gain;
     } else if ( buf[0] == SAS_CH7_TUNE ) {
         config.sas_ch7tune = enable;
-    } else if ( buf[0] == SAS_SAVE ) {
-        config_write_eeprom();
     } else {
         return false;
     }
@@ -158,8 +154,6 @@ bool mixing_command_parse(byte *buf) {
         config.mix_diff_thrust = enable;
         config.mix_Gtt = g1;
         config.mix_Gtr = g2;
-    } else if ( buf[0] == MIX_SAVE ) {
-        config_write_eeprom();
     } else {
         return false;
     }

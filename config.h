@@ -1,9 +1,19 @@
 #ifndef _APM2_CONFIG_H_INCLUDED
 #define _APM2_CONFIG_H_INCLUDED
 
+// this is the hardware PWM generation rate
+// note the default is 50hz and this is the max we can drive analog servos
+// digital servos should be able to run at 200hz -- 250hz is getting up close to the theoretical maximum
+// of a 100% duty cycle.  Advantage for running this at 200+hz with digital servos is we should catch commanded
+// position changes slightly faster for a slightly more responsive system (emphasis on slightly)
+// TODO: make this configurable via an external command.
+#define DEFAULT_PWM_HZ 50
+
 typedef struct {
     int version;
     int serial_number;
+    
+    uint16_t pwm_hz; // hz for pwm output signal, 50hz default for analog servos, maximum rate is servo dependent (digital servos can usually do 200-250hz)
     
     /* mixing modes */
     bool mix_autocoord;

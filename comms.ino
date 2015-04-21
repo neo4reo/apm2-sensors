@@ -6,6 +6,8 @@
  * Following that is a two byte check sum.  The check sum includes the packet id and size as well as the data.
  */
 
+#include "config.h"
+
 #define START_OF_MSG0 147
 #define START_OF_MSG1 224
 
@@ -17,6 +19,8 @@
 #define FLIGHT_COMMAND_PACKET_ID 23
 #define MIX_MODE_PACKET_ID 24
 #define SAS_MODE_PACKET_ID 25
+#define SERIAL_NUMBER_PACKET_ID 26
+#define WRITE_EEPROM_PACKET_ID 27
 
 #define PILOT_PACKET_ID 30
 #define IMU_PACKET_ID 31
@@ -133,21 +137,32 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 		if ( rate < 5 ) { rate = 5; }
 		if ( rate > 400 ) { rate = 400; }
 		APM_RC.SetFastOutputChannels( ch_mask, rate );
+                config.pwm_hz = rate;
 	    }
 	}
 	write_ack_bin( id, 0 );
-    
 	result = true;
     } else if ( id == SAS_MODE_PACKET_ID && message_size == 4 ) {
 	if ( sas_command_parse( buf ) ) {
 	    write_ack_bin( id, buf[0] /* sub command */ );
+            result = true;
 	}
     } else if ( id == MIX_MODE_PACKET_ID && message_size == 6 ) {
 	if ( mixing_command_parse( buf ) ) {
 	    write_ack_bin( id, buf[0] /* sub command */ );
+            result = true;
 	}
+    } else if ( id == SERIAL_NUMBER_PACKET_ID && message_size == 2 ) {
+	uint8_t lo = buf[0];
+	uint8_t hi = buf[1];
+	config.serial_number = hi*256 + lo;
+	write_ack_bin( id, 0 );
+	result = true;
+    } else if ( id == WRITE_EEPROM_PACKET_ID && message_size == 0 ) {
+	config_write_eeprom();
+	write_ack_bin( id, 0 );
+	result = true;
     }
-
     return result;
 }
 

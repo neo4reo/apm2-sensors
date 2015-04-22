@@ -14,6 +14,9 @@ typedef struct {
     
     uint16_t pwm_hz; // hz for pwm output signal, 50hz default for analog servos, maximum rate is servo dependent (digital servos can usually do 200-250hz)
     
+    /* actuator reversing */
+    int8_t act_rev[NUM_CHANNELS];
+    
     /* mixing modes */
     bool mix_autocoord;
     bool mix_throttle_trim;

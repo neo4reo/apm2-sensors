@@ -16,9 +16,6 @@
 // Firmware rev (needs to be updated manually)
 #define FIRMWARE_REV 220
 
-// Serial number (needs to be updated manually)
-#define SERIAL_NUMBER 12345
-
 // this is the master loop update rate
 #define MASTER_HZ 100
 //#define MASTER_HZ 200
@@ -181,19 +178,19 @@ void setup()
     // set default safe values for actuator outputs
     actuator_set_defaults();
     actuator_update();
-    
+     
     Serial.begin(DEFAULT_BAUD);
     Serial.println("\nAPM2 Sensor Head");
 
     // test (or possibly initial setup/config)
-    // set_serial_number(1234);
+    // set_serial_number(101);
     // read_serial_number();
     
     if ( !config_read_eeprom() ) {
         config_load_defaults();
         config_write_eeprom();
     }
-        
+    
     // set the PWM output rateas as defined above
     uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
     Serial.print("PWM rate: ");
@@ -291,9 +288,9 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        //write_pilot_in_ascii();
-        // write_actuator_out_ascii();
-        write_imu_ascii();
+        // write_pilot_in_ascii();
+        write_actuator_out_ascii();
+        // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();

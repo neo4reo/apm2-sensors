@@ -11,23 +11,24 @@
 #define START_OF_MSG0 147
 #define START_OF_MSG1 224
 
-#define ACK_PACKET_ID 10
+#define ACK_PACKET_ID 20
 
-#define ACTUATOR_PACKET_ID 20
 #define PWM_RATE_PACKET_ID 21
 #define BAUD_PACKET_ID 22
 #define FLIGHT_COMMAND_PACKET_ID 23
-#define MIX_MODE_PACKET_ID 24
-#define SAS_MODE_PACKET_ID 25
-#define SERIAL_NUMBER_PACKET_ID 26
-#define WRITE_EEPROM_PACKET_ID 27
+#define REVERSE_MODE_PACKET_ID 24
+#define MIX_MODE_PACKET_ID 25
+#define SAS_MODE_PACKET_ID 26
+#define SERIAL_NUMBER_PACKET_ID 27
+#define WRITE_EEPROM_PACKET_ID 28
 
-#define PILOT_PACKET_ID 30
-#define IMU_PACKET_ID 31
-#define GPS_PACKET_ID 32
-#define BARO_PACKET_ID 33
-#define ANALOG_PACKET_ID 34
+#define PILOT_PACKET_ID 50
+#define IMU_PACKET_ID 51
+#define GPS_PACKET_ID 52
+#define BARO_PACKET_ID 53
+#define ANALOG_PACKET_ID 54
 
+#define ACTUATOR_PACKET_ID 60
 
 void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size,
 		  byte *cksum0, byte *cksum1 )
@@ -142,6 +143,11 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	}
 	write_ack_bin( id, 0 );
 	result = true;
+    } else if ( id == REVERSE_MODE_PACKET_ID && message_size == 4 ) {
+	if ( reverse_command_parse( buf ) ) {
+	    write_ack_bin( id, buf[0] /* sub command */ );
+            result = true;
+	}
     } else if ( id == SAS_MODE_PACKET_ID && message_size == 4 ) {
 	if ( sas_command_parse( buf ) ) {
 	    write_ack_bin( id, buf[0] /* sub command */ );

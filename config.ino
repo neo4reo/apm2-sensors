@@ -38,6 +38,7 @@ void config_load_defaults() {
     Serial.println("Setting default config ...");
     config.version = CONFIG_VERSION;
     config.pwm_hz = DEFAULT_PWM_HZ;
+    act_rev_defaults();
     mixing_defaults();
     sas_defaults();
 }

@@ -16,7 +16,7 @@
 #define PWM_RATE_PACKET_ID 21
 #define BAUD_PACKET_ID 22
 #define FLIGHT_COMMAND_PACKET_ID 23
-#define REVERSE_MODE_PACKET_ID 24
+#define ACT_GAIN_PACKET_ID 24
 #define MIX_MODE_PACKET_ID 25
 #define SAS_MODE_PACKET_ID 26
 #define SERIAL_NUMBER_PACKET_ID 27
@@ -143,8 +143,8 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	}
 	write_ack_bin( id, 0 );
 	result = true;
-    } else if ( id == REVERSE_MODE_PACKET_ID && message_size == 4 ) {
-	if ( reverse_command_parse( buf ) ) {
+    } else if ( id == ACT_GAIN_PACKET_ID && message_size == 3 ) {
+	if ( act_gain_command_parse( buf ) ) {
 	    write_ack_bin( id, buf[0] /* sub command */ );
             result = true;
 	}

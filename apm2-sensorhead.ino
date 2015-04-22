@@ -191,6 +191,12 @@ void setup()
         config_write_eeprom();
     }
     
+    // config.act_gain[0] = -1.0;
+    // config.act_gain[2] = -1.0;
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        Serial.printf("ch %d gain: %.2f\n", i, config.act_gain[i]);
+    }
+    
     // set the PWM output rateas as defined above
     uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
     Serial.print("PWM rate: ");

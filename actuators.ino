@@ -8,9 +8,9 @@
 #define PWM_MIN (PWM_CENTER - PWM_HALF_RANGE)
 #define PWM_MAX (PWM_CENTER + PWM_HALF_RANGE)
 
-// Actuator reversing commands, format is cmd(byte) ch(byte) sense(int8: -1 or 1)
-#define ACT_REV_DEFAULTS 0
-#define ACT_REV_SET 1
+// Actuator gain (reversing) commands, format is cmd(byte) ch(byte) gain(float)
+#define ACT_GAIN_DEFAULTS 0
+#define ACT_GAIN_SET 1
 
 // SAS mode command, format is cmd(byte), gain(float)
 #define SAS_DEFAULTS 0
@@ -46,10 +46,10 @@ float ch7_cmd = 0.0;
 float ch8_cmd = 0.0;
 
 
-// reset actuator reversing to startup defaults
-void act_rev_defaults() {
+// reset actuator gains (reversing) to startup defaults
+void act_gain_defaults() {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        config.act_rev[i] = 1;
+        config.act_gain[i] = 1.0;
     }
 }
 
@@ -92,24 +92,21 @@ void mixing_defaults() {
 };
 
 
-bool reverse_command_parse(byte *buf) {
-    uint8_t ch = buf[1];
+bool act_gain_command_parse(byte *buf) {
+    uint8_t ch = buf[0];
     if ( ch >= NUM_CHANNELS ) {
         return false;
     }
-    
-    int8_t val;
-    if ( val != -1 && val != 1 ) {
+
+    byte lo = buf[1];
+    byte hi = buf[2];
+    uint16_t val = hi*256 + lo; 
+    float gain = ((float)val - 32767.0) / 10000.0;
+    if ( gain < -2.0 || gain > 2.0 ) {
         return false;
     }
 
-    if ( buf[0] == ACT_REV_DEFAULTS ) {
-        act_rev_defaults();
-    } else if ( buf[0] == ACT_REV_SET ) {
-        config.act_rev[ch] = val;
-    } else {
-        return false;
-    }
+    config.act_gain[ch] = gain;
     
     return true;
 }
@@ -220,13 +217,13 @@ void norm2raw( float norm[NUM_CHANNELS], uint16_t raw[NUM_CHANNELS] ) {
             // i.e. aileron, rudder, elevator
             //Serial.println(i);
             //Serial.println(config.act_rev[i]);
-	    raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i] * config.act_rev[i]);
+	    raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i] * config.act_gain[i]);
         } else {
 	    // i.e. throttle, flaps
-            if ( config.act_rev[i] > 0 ) {
-	        raw[i] = PWM_MIN + (int)(PWM_RANGE * norm[i]);
+            if ( config.act_gain[i] > 0.0 ) {
+	        raw[i] = PWM_MIN + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
             } else {
-	        raw[i] = PWM_MIN + (int)(PWM_RANGE * (1.0 - norm[i]));
+	        raw[i] = PWM_MAX + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
             }
         }
         if ( raw[i] < PWM_MIN ) {

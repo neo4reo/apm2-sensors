@@ -155,7 +155,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
     } else if ( id == SERIAL_NUMBER_PACKET_ID && message_size == 2 ) {
 	uint8_t lo = buf[0];
 	uint8_t hi = buf[1];
-	config.serial_number = hi*256 + lo;
+	set_serial_number(hi*256 + lo);
 	write_ack_bin( id, 0 );
 	result = true;
     } else if ( id == WRITE_EEPROM_PACKET_ID && message_size == 0 ) {

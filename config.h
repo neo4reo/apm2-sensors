@@ -11,7 +11,6 @@
 
 typedef struct {
     int version;
-    int serial_number;
     
     uint16_t pwm_hz; // hz for pwm output signal, 50hz default for analog servos, maximum rate is servo dependent (digital servos can usually do 200-250hz)
     
@@ -51,5 +50,7 @@ typedef struct {
 } config_t;
 
 extern config_t config;
+
+extern uint16_t apm2_serial_number;
 
 #endif /* _APM2_CONFIG_H_INCLUDED */

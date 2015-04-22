@@ -184,6 +184,10 @@ void setup()
     
     Serial.begin(DEFAULT_BAUD);
     Serial.println("\nAPM2 Sensor Head");
+
+    // test (or possibly initial setup/config)
+    // set_serial_number(1234);
+    // read_serial_number();
     
     if ( !config_read_eeprom() ) {
         config_load_defaults();
@@ -199,7 +203,7 @@ void setup()
     Serial.print("Firmware Revision: ");
     Serial.println(FIRMWARE_REV);
     Serial.print("Serial Number: ");
-    Serial.println(config.serial_number);
+    Serial.println(read_serial_number());
     delay(100);
     
     Serial.printf("F_CPU=%ld\n", F_CPU);

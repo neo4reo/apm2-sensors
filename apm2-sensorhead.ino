@@ -295,8 +295,8 @@ void loop()
         write_baro_bin();
         write_analog_bin();
     } else {
-        // write_pilot_in_ascii();
-        write_actuator_out_ascii();
+        write_pilot_in_ascii();
+        // write_actuator_out_ascii();
         // write_imu_ascii();
         // write_gps_ascii();
         // write_baro_ascii();

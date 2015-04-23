@@ -2,8 +2,8 @@
 
 #include "config.h"
 
-#define PWM_CENTER 1500
-#define PWM_HALF_RANGE 450
+#define PWM_CENTER 1520
+#define PWM_HALF_RANGE 413
 #define PWM_RANGE (PWM_HALF_RANGE * 2)
 #define PWM_MIN (PWM_CENTER - PWM_HALF_RANGE)
 #define PWM_MAX (PWM_CENTER + PWM_HALF_RANGE)

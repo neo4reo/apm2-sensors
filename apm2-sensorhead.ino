@@ -198,10 +198,11 @@ void setup()
     }
     
     // set the PWM output rateas as defined above
-    uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
-    Serial.print("PWM rate: ");
-    Serial.println(config.pwm_hz);
-    APM_RC.SetFastOutputChannels( ch_mask, config.pwm_hz );
+    //uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
+    //Serial.print("PWM rate: ");
+    //Serial.println(config.pwm_hz);
+    //APM_RC.SetFastOutputChannels( ch_mask, config.pwm_hz );
+    pwm_set_rates();
     
     Serial.print("Firmware Revision: ");
     Serial.println(FIRMWARE_REV);

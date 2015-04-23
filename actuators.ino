@@ -46,6 +46,27 @@ float ch7_cmd = 0.0;
 float ch8_cmd = 0.0;
 
 
+// reset pwm rates to safe startup defaults
+void pwm_rate_defaults() {
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        config.pwm_hz[i] = 50;
+    }
+}
+
+
+// reset pwm rates to safe startup defaults
+void pwm_set_rates() {
+    Serial.print("PWM rates: ");
+    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+        uint16_t rate = config.pwm_hz[i];
+        Serial.printf("%d, ", rate);
+	uint32_t ch_mask = _BV(i);
+        APM_RC.SetFastOutputChannels( ch_mask, rate );
+    }
+    Serial.println();
+}
+
+
 // reset actuator gains (reversing) to startup defaults
 void act_gain_defaults() {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {

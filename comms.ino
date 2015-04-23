@@ -97,7 +97,8 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	// disable baud changing until I have more time to work out
 	// the nuances seems like when the remote end closes and
 	// reopens at the new baud, this side may get reset and put
-	// back to 115,200 and the whole app starts over.
+	// back to 115,200 and the whole app starts over -- when connected
+        // via the usb port.
     } else if ( id == BAUD_PACKET_ID && message_size == 4 ) {
 	//Serial.println("read Baud command");
 	/* of course changing baud could can break communication until
@@ -128,17 +129,17 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	 * with rate of 0 are left untouched (but will be affected if
 	 * another group member rate is set.) */
 	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-	    uint32_t ch_mask = _BV(i);
 	    uint8_t lo = buf[counter++];
 	    uint8_t hi = buf[counter++];
 	    uint16_t rate = hi*256 + lo;
 	    //Serial.printf("ch %d rate %d\n", i, rate);
 	    if ( rate > 0 ) {
-		// sanity checks
-		if ( rate < 5 ) { rate = 5; }
-		if ( rate > 400 ) { rate = 400; }
+                config.pwm_hz[i] = rate;
+                // sanity checks
+		if ( rate < 50 ) { rate = 50; }
+		if ( rate > 250 ) { rate = 250; }
+                uint32_t ch_mask = _BV(i);
 		APM_RC.SetFastOutputChannels( ch_mask, rate );
-                config.pwm_hz = rate;
 	    }
 	}
 	write_ack_bin( id, 0 );

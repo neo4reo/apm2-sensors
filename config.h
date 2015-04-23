@@ -12,7 +12,10 @@
 typedef struct {
     int version;
     
-    uint16_t pwm_hz; // hz for pwm output signal, 50hz default for analog servos, maximum rate is servo dependent (digital servos can usually do 200-250hz)
+    /* hz for pwm output signal, 50hz default for analog servos, maximum rate is servo dependent:
+       digital servos can usually do 200-250hz
+       analog servos and ESC's typically require 50hz */
+    uint16_t pwm_hz[NUM_CHANNELS];
     
     /* actuator gain (reversing) */
     float act_gain[NUM_CHANNELS];

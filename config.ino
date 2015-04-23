@@ -37,7 +37,7 @@ int set_serial_number(uint16_t serial_number) {
 void config_load_defaults() {
     Serial.println("Setting default config ...");
     config.version = CONFIG_VERSION;
-    config.pwm_hz = DEFAULT_PWM_HZ;
+    pwm_rate_defaults();
     act_gain_defaults();
     mixing_defaults();
     sas_defaults();

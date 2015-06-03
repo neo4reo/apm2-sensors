@@ -1,5 +1,5 @@
 /*
-        APM2 Sensor Head Firmware
+        APM2 Sensors Firmware
 	Written by Curtis L. Olson, Airborne Technologies, Inc. colson@atiak.com
 
         Provides all the APM2 sensor data via binary checksummed data packets sent over the console
@@ -180,7 +180,7 @@ void setup()
     actuator_update();
      
     Serial.begin(DEFAULT_BAUD);
-    Serial.println("\nAPM2 Sensor Head");
+    Serial.println("\nAPM2 Sensors");
 
     // test (or possibly initial setup/config)
     // set_serial_number(101);

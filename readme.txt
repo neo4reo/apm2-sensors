@@ -1,5 +1,5 @@
-apm2-sensorhead - replacement firmware for an inexpensive APM2 board.
-This firmware converts the APM2 into a standalone sensorhead module
+apm2-sensors - replacement firmware for an inexpensive APM2 board.
+This firmware converts the APM2 into a standalone sensors module
 and adds a full suite of inertial and position sensors to any host
 computer or application.  This firmware maintains APM2 support for
 reading RC receiver values in, and driving output servos so for some

@@ -269,14 +269,13 @@ void loop()
     imu.update();
     imu_gyro = imu.get_gyro();
     imu_accel = imu.get_accel();
-    
-    // convert to "standard" coordinate system
-    imu_sensors[0] = imu_gyro.x * -1.0;
-    imu_sensors[1] = imu_gyro.y * -1.0;
-    imu_sensors[2] = imu_gyro.z *  1.0;
-    imu_sensors[3] = imu_accel.x * -1.0;
-    imu_sensors[4] = imu_accel.y * -1.0;
-    imu_sensors[5] = imu_accel.z *  1.0;
+
+    imu_sensors[0] = imu_gyro.x;
+    imu_sensors[1] = imu_gyro.y;
+    imu_sensors[2] = imu_gyro.z;
+    imu_sensors[3] = imu_accel.x;
+    imu_sensors[4] = imu_accel.y;
+    imu_sensors[5] = imu_accel.z;
     imu_sensors[6] = ins.temperature();
 
     // GPS Update

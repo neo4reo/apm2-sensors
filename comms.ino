@@ -446,7 +446,7 @@ void write_gps_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
-    byte size = 28;
+    byte size = 30;
     byte packet_buf[256]; // hopefully never larger than this!
     byte *packet = packet_buf;
 
@@ -474,11 +474,13 @@ void write_gps_bin()
     *(int32_t *)packet = g_gps->latitude; packet += 4;
     *(int32_t *)packet = g_gps->longitude; packet += 4;
     *(int32_t *)packet = g_gps->altitude; packet += 4;
-    *(uint16_t *)packet = (uint16_t)g_gps->ground_speed; packet += 2;
-    if ( g_gps->ground_course < 0 ) { g_gps->ground_course += 36000; }
-    *(uint16_t *)packet = (uint16_t)g_gps->ground_course; packet += 2;
-    // *(int32_t *)packet = g_gps->speed_3d; packet += 4;
-    *(int16_t *)packet = g_gps->hdop; packet += 2;
+    //*(uint16_t *)packet = (uint16_t)g_gps->ground_speed; packet += 2;
+    //if ( g_gps->ground_course < 0 ) { g_gps->ground_course += 36000; }
+    //*(uint16_t *)packet = (uint16_t)g_gps->ground_course; packet += 2;
+    *(int16_t *)packet = (int16_t)g_gps->vn_cms; packet += 2;
+    *(int16_t *)packet = (int16_t)g_gps->ve_cms; packet += 2;
+    *(int16_t *)packet = (int16_t)g_gps->vd_cms; packet += 2;
+    *(int16_t *)packet = g_gps->pdop; packet += 2;
     *(uint8_t *)packet = g_gps->num_sats; packet += 1;
     *(uint8_t *)packet = g_gps->status(); packet += 1;
   
@@ -510,8 +512,14 @@ void write_gps_ascii()
     Serial.print((float)g_gps->longitude / T7, DEC);
     Serial.print(" Alt:");
     Serial.print((float)g_gps->altitude / 100.0, DEC);
+    Serial.print(" Vel:");
+    Serial.print(g_gps->vn_cms / 100.0);
+    Serial.print(", ");
+    Serial.print(g_gps->ve_cms / 100.0);
+    Serial.print(", ");
+    Serial.print(g_gps->vd_cms / 100.0);
     Serial.print(" GSP:");
-    Serial.print(g_gps->ground_speed / 100.0);
+    Serial.print(g_gps->ground_speed / 100.0, DEC);
     Serial.print(" COG:");
     Serial.print(g_gps->ground_course / 100.0, DEC);
     Serial.print(" SAT:");

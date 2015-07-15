@@ -14,7 +14,7 @@
 ///////////////////77//////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 220
+#define FIRMWARE_REV 221
 
 // this is the master loop update rate
 #define MASTER_HZ 100
@@ -296,8 +296,8 @@ void loop()
     } else {
         // write_pilot_in_ascii();
         // write_actuator_out_ascii();
-        write_imu_ascii();
-        // write_gps_ascii();
+        // write_imu_ascii();
+        write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
     }

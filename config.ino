@@ -9,7 +9,7 @@
 uint16_t apm2_serial_number;
 config_t config;
 
-int read_serial_number() {
+uint16_t read_serial_number() {
     uint8_t lo = EEPROM.read(0);
     uint8_t hi = EEPROM.read(1);
     // Serial.printf(" raw serial number read %d %d\n", hi, lo);

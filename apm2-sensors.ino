@@ -26,6 +26,7 @@
 // 115,200 we diverge enough that it may not always work well end to end.  500,000 baud is a
 // 1-to-1 match.
 #define DEFAULT_BAUD 115200
+//#define DEFAULT_BAUD 200000
 //#define DEFAULT_BAUD 250000
 //#define DEFAULT_BAUD 500000
 
@@ -183,7 +184,7 @@ void setup()
     Serial.println("\nAPM2 Sensors");
 
     // test (or possibly initial setup/config)
-    // set_serial_number(101);
+    // set_serial_number(50);
     // read_serial_number();
     
     if ( !config_read_eeprom() ) {
@@ -293,13 +294,15 @@ void loop()
         write_gps_bin();
         write_baro_bin();
         write_analog_bin();
+        write_config_info_bin();
     } else {
         // write_pilot_in_ascii();
         // write_actuator_out_ascii();
-        // write_imu_ascii();
-        write_gps_ascii();
+        write_imu_ascii();
+        // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
+        write_config_info_ascii();
     }
 }
 

@@ -27,6 +27,7 @@
 #define GPS_PACKET_ID 52
 #define BARO_PACKET_ID 53
 #define ANALOG_PACKET_ID 54
+#define CONFIG_INFO_PACKET_ID 55
 
 #define ACTUATOR_PACKET_ID 60
 
@@ -665,5 +666,72 @@ void write_analog_ascii()
     Serial.printf("%.4f ", (float)amp_filt);
     Serial.printf("%.4f\n", (float)amps_sum);
     */
+}
+
+/* output a binary representation of various configuration information */
+void write_config_info_bin()
+{
+    byte buf[3];
+    byte cksum0, cksum1;
+    byte size = 10;
+    byte packet_buf[256]; // hopefully never larger than this!
+    byte *packet = packet_buf;
+
+    // This info is static so we don't need to send it at a high rate ... once every 10 seconds (?)
+    // with an immediate message at the start.
+    static int counter = 0;
+    if ( counter > 0 ) {
+        counter--;
+        return;
+    } else {
+        counter = MASTER_HZ * 10 - 1; // a message every 10 seconds (-1 so we aren't off by one frame) 
+    }
+
+    // start of message sync bytes
+    buf[0] = START_OF_MSG0; 
+    buf[1] = START_OF_MSG1; 
+    buf[2] = 0;
+    Serial.write( buf, 2 );
+
+    // packet id (1 byte)
+    buf[0] = CONFIG_INFO_PACKET_ID; 
+    buf[1] = 0;
+    Serial.write( buf, 1 );
+
+    // packet length (1 byte)
+    buf[0] = size;
+    Serial.write( buf, 1 );
+
+    *(uint16_t *)packet = (uint16_t)apm2_serial_number; packet += 2;
+    *(uint16_t *)packet = (uint16_t)FIRMWARE_REV; packet += 2;
+    *(uint16_t *)packet = (uint16_t)MASTER_HZ; packet += 2;
+    *(uint32_t *)packet = (uint32_t)DEFAULT_BAUD; packet += 4;
+
+    // write packet
+    Serial.write( packet_buf, size );
+
+    // check sum (2 bytes)
+    ugear_cksum( CONFIG_INFO_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+    buf[0] = cksum0; 
+    buf[1] = cksum1; 
+    buf[2] = 0;
+    Serial.write( buf, 2 );
+}
+
+void write_config_info_ascii()
+{
+    // This info is static so we don't need to send it at a high rate ... once every 10 seconds (?)
+    // with an immediate message at the start.
+    static int counter = 0;
+    if ( counter > 0 ) {
+        counter--;
+        return;
+    } else {
+        counter = MASTER_HZ * 10 - 1; // a message every 10 seconds (-1 so we aren't off by one frame) 
+    }
+    Serial.printf("SN: %d ", read_serial_number());
+    Serial.printf("Firmware: %d ", FIRMWARE_REV);
+    Serial.printf("Main loop: %d ", MASTER_HZ);
+    Serial.printf("Baud: %ld\n", DEFAULT_BAUD);
 }
 

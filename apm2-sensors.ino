@@ -184,7 +184,7 @@ void setup()
     Serial.println("\nAPM2 Sensors");
 
     // test (or possibly initial setup/config)
-    // set_serial_number(50);
+    // set_serial_number(201);
     // read_serial_number();
     
     if ( !config_read_eeprom() ) {

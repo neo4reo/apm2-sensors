@@ -711,7 +711,7 @@ void write_config_info_bin()
     Serial.write( packet_buf, size );
 
     // check sum (2 bytes)
-    ugear_cksum( CONFIG_INFO_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+    ugear_cksum( CONFIG_INFO_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
     buf[0] = cksum0; 
     buf[1] = cksum1; 
     buf[2] = 0;

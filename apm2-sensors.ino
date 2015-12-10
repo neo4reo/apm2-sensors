@@ -18,7 +18,7 @@
 
 // this is the master loop update rate
 #define MASTER_HZ 100
-//#define MASTER_HZ 200
+// #define MASTER_HZ 200
 
 // starting communication baud (16000000/16)/x where x is an integer produces the possible baud
 // rates.  Note this is not the standard 300, 1200, 4800, 9600, 115,200, etc. series.  We can get
@@ -142,6 +142,7 @@ uint16_t analog[MAX_ANALOG_INPUTS];
 #endif
 
 static uint32_t loop_timer = 0;
+static uint32_t loop_timeout = 0;
 static uint32_t dt_millis = 1000 / MASTER_HZ;
 
 // GPS (Enable the appropriate GPS)
@@ -252,20 +253,21 @@ void setup()
     //Serial2.println("APM2 Aux Port");
    
     loop_timer = millis();
+    loop_timeout = millis() + 2*dt_millis;
 }
 
 void loop()
 {
-    while ( millis() < loop_timer ); // busy wait for next frame
-    loop_timer += dt_millis;
+    // schedule loop timing from IMU (@ 500hz) and an intended main loop rate of 100hz
+    // (and a 50hz bailout rate if the IMU goes chips up, so things like manual flight mode, rate dampening,
+    // and control mixing will still work)
+    while ( imu.num_samples_available() < 5 && millis() < loop_timeout ); // busy wait for next frame
+    loop_timeout = millis() + 2*dt_millis;
     
     // Fetch new radio frame (and if manual override set, mix the
     // inputs and write the actuator commands to the APM2_RC system)
     receiver_process();
     
-    // suck in any host commmands    
-    while ( read_commands() );
-
     // IMU Update
     imu.update();
     imu_gyro = imu.get_gyro();
@@ -278,6 +280,9 @@ void loop()
     imu_sensors[4] = imu_accel.y;
     imu_sensors[5] = imu_accel.z;
     imu_sensors[6] = ins.temperature();
+
+    // suck in any host commmands    
+    while ( read_commands() );
 
     // GPS Update
     g_gps->update();
@@ -298,8 +303,8 @@ void loop()
     } else {
         // write_pilot_in_ascii();
         // write_actuator_out_ascii();
-        write_imu_ascii();
-        // write_gps_ascii();
+        // write_imu_ascii();
+        write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
         write_config_info_ascii();

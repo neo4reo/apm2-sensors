@@ -294,16 +294,16 @@ void loop()
     read_analogs();
     
     if ( binary_output ) {
-        write_pilot_in_bin();
         write_imu_bin();
+        write_pilot_in_bin();
         write_gps_bin();
         write_baro_bin();
         write_analog_bin();
         write_config_info_bin();
     } else {
+        write_imu_ascii();
         // write_pilot_in_ascii();
         // write_actuator_out_ascii();
-        // write_imu_ascii();
         write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();

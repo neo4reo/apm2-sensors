@@ -305,7 +305,7 @@ void write_ack_bin( uint8_t command_id, uint8_t subcommand_id )
 
 
 /* output a binary representation of the pilot (rc receiver) data */
-void write_pilot_in_bin()
+uint8_t write_pilot_in_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -345,6 +345,8 @@ void write_pilot_in_bin()
     buf[1] = cksum1; 
     buf[2] = 0;
     Serial.write( buf, 2 );
+    
+    return size + 6;
 }
 
 void write_pilot_in_ascii()
@@ -370,7 +372,7 @@ void write_actuator_out_ascii()
 }
 
 /* output a binary representation of the IMU data (note: scaled to 16bit values) */
-void write_imu_bin()
+uint8_t write_imu_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -429,6 +431,8 @@ void write_imu_bin()
     buf[1] = cksum1; 
     buf[2] = 0;
     Serial.write( buf, 2 );
+    
+    return size + 6;
 }
 
 void write_imu_ascii()
@@ -443,7 +447,7 @@ void write_imu_ascii()
 }
 
 /* output a binary representation of the GPS data */
-void write_gps_bin()
+uint8_t write_gps_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -452,7 +456,7 @@ void write_gps_bin()
     byte *packet = packet_buf;
 
     if ( !g_gps->new_data ) {
-	return;
+	return 0;
     }
     
     // start of message sync bytes
@@ -496,6 +500,8 @@ void write_gps_bin()
     Serial.write( buf, 2 );
   
     g_gps->new_data = false;
+    
+    return size + 6;
 }
 
 #define T6 1000000
@@ -544,7 +550,7 @@ void write_gps_ascii()
 }
 
 /* output a binary representation of the barometer data */
-void write_baro_bin()
+uint8_t write_baro_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -553,7 +559,7 @@ void write_baro_bin()
     byte *packet = packet_buf;
 
     if ( !baro.healthy ) {
-	return;
+	return 0;
     }
     
     // start of message sync bytes
@@ -584,6 +590,8 @@ void write_baro_bin()
     buf[1] = cksum1; 
     buf[2] = 0;
     Serial.write( buf, 2 );
+    
+    return size + 6;
 }
 
 void write_baro_ascii()
@@ -605,7 +613,7 @@ void write_baro_ascii()
 }
 
 /* output a binary representation of the analog input data */
-void write_analog_bin()
+uint8_t write_analog_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -645,6 +653,8 @@ void write_analog_bin()
     buf[1] = cksum1; 
     buf[2] = 0;
     Serial.write( buf, 2 );
+    
+    return size + 6;
 }
 
 void write_analog_ascii()
@@ -669,7 +679,7 @@ void write_analog_ascii()
 }
 
 /* output a binary representation of various configuration information */
-void write_config_info_bin()
+uint8_t write_config_info_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -682,7 +692,7 @@ void write_config_info_bin()
     static int counter = 0;
     if ( counter > 0 ) {
         counter--;
-        return;
+        return 0;
     } else {
         counter = MASTER_HZ * 10 - 1; // a message every 10 seconds (-1 so we aren't off by one frame) 
     }
@@ -716,6 +726,8 @@ void write_config_info_bin()
     buf[1] = cksum1; 
     buf[2] = 0;
     Serial.write( buf, 2 );
+    
+    return size + 6;
 }
 
 void write_config_info_ascii()

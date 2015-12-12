@@ -9,10 +9,24 @@ applications it could serve as a robot controller.
 v2.30 release notes -
 ========================================
 
+Tighter main loop timing, synced with IMU samples.  (Removes a free-running
+loop which leads to timing jitter and indeterminant latencies.)
+
 Quite a few changes to remove prog_char from the libraries and remove
 FastSerial in favor of HardwareSerial.
 
 Support for compiling with newer version of the arduino IDE.
+
+Make PWM center and range match Futaba 'standard'.
+
+Add commands to setup SAS mode and adjust gains from host computer.
+
+Updated several packet formats and ID numbers.
+
+Report bytes transfer rate to host in the config/status message.
+
+Better support for saving configuration parameters in the EEPROM.
+
 
 v2.20 release notes - April 21, 2015
 ========================================

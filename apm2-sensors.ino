@@ -129,19 +129,6 @@ AP_AnalogSource_Arduino battery1_source(VOLTAGE1_ANALOG_PIN);
 #define MAX_ANALOG_INPUTS 6
 uint16_t analog[MAX_ANALOG_INPUTS];
 
-#if 0
-// uncomment one of these
-#define VOLT_DIV_RATIO     4.089   // This is the value I computed experimentally
-// #define VOLT_DIV_RATIO     4.127   // This is the proper value for the AttoPilot 45A (13.6V) sensor
-// #define VOLT_DIV_RATIO     15.70   // This is the proper value for the AttoPilot 50V/90A sensor
-
-#define CURR_AMPS_OFFSET   0.0
-
-// uncomment one of these
-#define CURR_AMP_PER_VOLT     13.66   // This is the proper value for the AttoPilot 45A (13.6V) sensor
-// #define CURR_AMP_PER_VOLT    27.32  // This is the proper value for the AttoPilot 50V/90A sensor
-#endif
-
 static unsigned long loop_timeout = 0;
 static uint32_t dt_millis = 1000 / MASTER_HZ;
 
@@ -199,7 +186,6 @@ void setup()
     // config.act_gain[0] = -1.0;
     // config.act_gain[2] = -1.0;
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        // Serial.printf("ch %d gain: %.2f\n", i, config.act_gain[i]);
         Serial.print("ch ");
         Serial.print(i);
         Serial.print(" gain: ");

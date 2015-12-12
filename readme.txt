@@ -6,6 +6,14 @@ reading RC receiver values in, and driving output servos so for some
 applications it could serve as a robot controller.
 
 
+v2.30 release notes -
+========================================
+
+Quite a few changes to remove prog_char from the libraries and remove
+FastSerial in favor of HardwareSerial.
+
+Support for compiling with newer version of the arduino IDE.
+
 v2.20 release notes - April 21, 2015
 ========================================
 

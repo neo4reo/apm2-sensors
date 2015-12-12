@@ -153,7 +153,7 @@ AP_GPS_UBLOX      g_gps_driver(&Serial1);
 // Barometer
 AP_Baro_MS5611 baro;
 
-uint32_t write_counter = 0;
+unsigned long output_counter = 0;
 unsigned long write_millis = 0;
 
 void setup()
@@ -296,12 +296,14 @@ void loop()
     read_analogs();
     
     if ( binary_output ) {
-        write_counter += write_imu_bin();
-        write_counter += write_pilot_in_bin();
-        write_counter += write_gps_bin();
-        write_counter += write_baro_bin();
-        write_counter += write_analog_bin();
-        write_counter += write_status_info_bin();
+        output_counter += write_imu_bin();
+        output_counter += write_pilot_in_bin();
+        output_counter += write_gps_bin();
+        output_counter += write_baro_bin();
+        output_counter += write_analog_bin();
+        // do a little extra dance with the resturn value because write_status_info_bin() can reset output_counter (but that gets ignored if we do the math in one step)
+        uint8_t result = write_status_info_bin();
+        output_counter += result;
     } else {
         write_imu_ascii();
         // write_pilot_in_ascii();

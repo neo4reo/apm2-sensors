@@ -683,7 +683,7 @@ uint8_t write_status_info_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
-    byte size = 10;
+    byte size = 12;
     byte packet_buf[256]; // hopefully never larger than this!
     byte *packet = packet_buf;
 
@@ -694,7 +694,7 @@ uint8_t write_status_info_bin()
         counter--;
         return 0;
     } else {
-        counter = MASTER_HZ * 10 - 1; // a message every 10 seconds (-1 so we aren't off by one frame) 
+        counter = MASTER_HZ * 5 - 1; // a message every 10 seconds (-1 so we aren't off by one frame) 
     }
 
     // start of message sync bytes
@@ -718,11 +718,11 @@ uint8_t write_status_info_bin()
     *(uint32_t *)packet = (uint32_t)DEFAULT_BAUD; packet += 4;
 
     // estimate sensor output byte rate
-    unsigned long current_time = millis()
-    float elapsed_sec = (float)(current_time - write_millis) / 1000.0;
-    float byte_rate = (float)write_counter / elapsed_sec;
+    unsigned long current_time = millis();
+    unsigned long elapsed_millis = current_time - write_millis;
+    unsigned long byte_rate = output_counter * 1000 / elapsed_millis;
     write_millis = current_time;
-    write_counter = 0;
+    output_counter = 0;
     *(uint16_t *)packet = (uint16_t)byte_rate; packet += 2;
     
     // write packet

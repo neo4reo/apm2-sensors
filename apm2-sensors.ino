@@ -11,10 +11,10 @@
 
 ///////////////////////////////////////////
 // Config section
-///////////////////77//////////////////////
+///////////////////////////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 221
+#define FIRMWARE_REV 223
 
 // this is the master loop update rate
 #define MASTER_HZ 100
@@ -283,7 +283,7 @@ void loop()
     // inputs and write the actuator commands to the APM2_RC system)
     receiver_process();
     
-    // suck in any host commmands (would I want to check for host commands at a higher rate?)    
+    // suck in any host commmands (would I want to check for host commands at a higher rate? imu rate?)    
     while ( read_commands() );
 
     // GPS Update

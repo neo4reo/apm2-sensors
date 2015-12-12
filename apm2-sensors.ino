@@ -154,6 +154,8 @@ AP_GPS_UBLOX      g_gps_driver(&Serial1);
 // Barometer
 AP_Baro_MS5611 baro;
 
+uint32_t counter = 0;
+
 void setup()
 {
     I2c.begin();
@@ -264,10 +266,6 @@ void loop()
     while ( imu.num_samples_available() < 5 && millis() < loop_timeout ); // busy wait for next frame
     loop_timeout = millis() + 2*dt_millis;
     
-    // Fetch new radio frame (and if manual override set, mix the
-    // inputs and write the actuator commands to the APM2_RC system)
-    receiver_process();
-    
     // IMU Update
     imu.update();
     imu_gyro = imu.get_gyro();
@@ -281,7 +279,11 @@ void loop()
     imu_sensors[5] = imu_accel.z;
     imu_sensors[6] = ins.temperature();
 
-    // suck in any host commmands    
+    // Fetch new radio frame (and if manual override set, mix the
+    // inputs and write the actuator commands to the APM2_RC system)
+    receiver_process();
+    
+    // suck in any host commmands (would I want to check for host commands at a higher rate?)    
     while ( read_commands() );
 
     // GPS Update
@@ -294,12 +296,12 @@ void loop()
     read_analogs();
     
     if ( binary_output ) {
-        write_imu_bin();
-        write_pilot_in_bin();
-        write_gps_bin();
-        write_baro_bin();
-        write_analog_bin();
-        write_config_info_bin();
+        counter += write_imu_bin();
+        counter += write_pilot_in_bin();
+        counter += write_gps_bin();
+        counter += write_baro_bin();
+        counter += write_analog_bin();
+        counter += write_config_info_bin();
     } else {
         write_imu_ascii();
         // write_pilot_in_ascii();

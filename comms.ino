@@ -27,7 +27,7 @@
 #define GPS_PACKET_ID 52
 #define BARO_PACKET_ID 53
 #define ANALOG_PACKET_ID 54
-#define CONFIG_INFO_PACKET_ID 55
+#define STATUS_INFO_PACKET_ID 55
 
 #define ACTUATOR_PACKET_ID 60
 
@@ -678,8 +678,8 @@ void write_analog_ascii()
     */
 }
 
-/* output a binary representation of various configuration information */
-uint8_t write_config_info_bin()
+/* output a binary representation of various status and config information */
+uint8_t write_status_info_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
@@ -704,7 +704,7 @@ uint8_t write_config_info_bin()
     Serial.write( buf, 2 );
 
     // packet id (1 byte)
-    buf[0] = CONFIG_INFO_PACKET_ID; 
+    buf[0] = STATUS_INFO_PACKET_ID; 
     buf[1] = 0;
     Serial.write( buf, 1 );
 
@@ -717,11 +717,19 @@ uint8_t write_config_info_bin()
     *(uint16_t *)packet = (uint16_t)MASTER_HZ; packet += 2;
     *(uint32_t *)packet = (uint32_t)DEFAULT_BAUD; packet += 4;
 
+    // estimate sensor output byte rate
+    unsigned long current_time = millis()
+    float elapsed_sec = (float)(current_time - write_millis) / 1000.0;
+    float byte_rate = (float)write_counter / elapsed_sec;
+    write_millis = current_time;
+    write_counter = 0;
+    *(uint16_t *)packet = (uint16_t)byte_rate; packet += 2;
+    
     // write packet
     Serial.write( packet_buf, size );
 
     // check sum (2 bytes)
-    ugear_cksum( CONFIG_INFO_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
+    ugear_cksum( STATUS_INFO_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
     buf[0] = cksum0; 
     buf[1] = cksum1; 
     buf[2] = 0;
@@ -730,7 +738,7 @@ uint8_t write_config_info_bin()
     return size + 6;
 }
 
-void write_config_info_ascii()
+void write_status_info_ascii()
 {
     // This info is static so we don't need to send it at a high rate ... once every 10 seconds (?)
     // with an immediate message at the start.

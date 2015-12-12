@@ -141,8 +141,7 @@ uint16_t analog[MAX_ANALOG_INPUTS];
 // #define CURR_AMP_PER_VOLT    27.32  // This is the proper value for the AttoPilot 50V/90A sensor
 #endif
 
-static uint32_t loop_timer = 0;
-static uint32_t loop_timeout = 0;
+static unsigned long loop_timeout = 0;
 static uint32_t dt_millis = 1000 / MASTER_HZ;
 
 // GPS (Enable the appropriate GPS)
@@ -154,7 +153,8 @@ AP_GPS_UBLOX      g_gps_driver(&Serial1);
 // Barometer
 AP_Baro_MS5611 baro;
 
-uint32_t counter = 0;
+uint32_t write_counter = 0;
+unsigned long write_millis = 0;
 
 void setup()
 {
@@ -254,8 +254,8 @@ void setup()
     //Serial2.begin(DEFAULT_BAUD);
     //Serial2.println("APM2 Aux Port");
    
-    loop_timer = millis();
     loop_timeout = millis() + 2*dt_millis;
+    write_millis = millis();
 }
 
 void loop()
@@ -283,7 +283,7 @@ void loop()
     // inputs and write the actuator commands to the APM2_RC system)
     receiver_process();
     
-    // suck in any host commmands (would I want to check for host commands at a higher rate? imu rate?)    
+    // suck in any host commmands (would I want to check for host commands at a higher rate? imu rate?)
     while ( read_commands() );
 
     // GPS Update
@@ -296,12 +296,12 @@ void loop()
     read_analogs();
     
     if ( binary_output ) {
-        counter += write_imu_bin();
-        counter += write_pilot_in_bin();
-        counter += write_gps_bin();
-        counter += write_baro_bin();
-        counter += write_analog_bin();
-        counter += write_config_info_bin();
+        write_counter += write_imu_bin();
+        write_counter += write_pilot_in_bin();
+        write_counter += write_gps_bin();
+        write_counter += write_baro_bin();
+        write_counter += write_analog_bin();
+        write_counter += write_status_info_bin();
     } else {
         write_imu_ascii();
         // write_pilot_in_ascii();
@@ -309,7 +309,7 @@ void loop()
         write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
-        write_config_info_ascii();
+        write_status_info_ascii();
     }
 }
 

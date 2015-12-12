@@ -67,7 +67,7 @@
 #include <Arduino_Mega_ISR_Registry.h>
 
 // APM Library Includes
-#include <FastSerial.h>
+// #include <FastSerial.h>
 #include <AP_Common.h>
 #include <I2C.h>
 #include <SPI.h>
@@ -92,9 +92,10 @@
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess timer_scheduler;
 
-FastSerialPort0(Serial);  // FTDI/Console
-FastSerialPort1(Serial1); // GPS port
-//FastSerialPort2(Serial2); // Auxillary port
+// Serial =  FTDI/Console/Host communication port
+// Serial1 = GPS port
+// Serial2 = SBUS / Auxillary port
+
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
 APM_RC_APM2 APM_RC;
@@ -198,7 +199,11 @@ void setup()
     // config.act_gain[0] = -1.0;
     // config.act_gain[2] = -1.0;
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        Serial.printf("ch %d gain: %.2f\n", i, config.act_gain[i]);
+        // Serial.printf("ch %d gain: %.2f\n", i, config.act_gain[i]);
+        Serial.print("ch ");
+        Serial.print(i);
+        Serial.print(" gain: ");
+        Serial.println(config.act_gain[i]);
     }
     
     // set the PWM output rateas as defined above
@@ -214,11 +219,15 @@ void setup()
     Serial.println(read_serial_number());
     delay(100);
     
-    Serial.printf("F_CPU=%ld\n", F_CPU);
+    //Serial.printf("F_CPU=%ld\n", F_CPU);
+    Serial.print("F_CPU=");
+    Serial.println(F_CPU);
     uint16_t ubrr;
     uint32_t baud = 230400;
     ubrr = (F_CPU / 4 / baud - 1) / 2;
-    Serial.printf("ubrr = %d\n", ubrr);
+    //Serial.printf("ubrr = %d\n", ubrr);
+    Serial.print("ubrr=");
+    Serial.println(ubrr);
     
     Serial.println("Initializing MSC5611 Barometer...");
     baro.init(&timer_scheduler);
@@ -235,7 +244,7 @@ void setup()
 
     Serial.println("Initializing GPS (Expecting ublox hardware) ...");
     // standard gps rate
-    Serial1.begin(38400, 256, 16);
+    Serial1.begin(38400);
     g_gps = &g_gps_driver;
     g_gps->init(GPS::GPS_ENGINE_AIRBORNE_4G);
     delay(200);

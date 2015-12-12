@@ -31,6 +31,7 @@
 
 #define ACTUATOR_PACKET_ID 60
 
+
 void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size,
 		  byte *cksum0, byte *cksum1 )
 {
@@ -354,10 +355,10 @@ void write_pilot_in_ascii()
     // receiver input data
     Serial.print("RCIN:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.printf("%4d ", receiver_raw[i]);
+        Serial.print(receiver_raw[i]);
+        Serial.print(" ");
     }
-    Serial.printf("%4d", receiver_raw[NUM_CHANNELS-1]);
-    Serial.println();
+    Serial.println(receiver_raw[NUM_CHANNELS-1]);
 }
 
 void write_actuator_out_ascii()
@@ -365,10 +366,11 @@ void write_actuator_out_ascii()
     // actuator output
     Serial.print("RCOUT:");
     for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.printf("%4d ", actuator_raw[i]);
+
+        Serial.print(actuator_raw[i]);
+        Serial.print(" ");
     }
-    Serial.printf("%4d", actuator_raw[NUM_CHANNELS-1]);
-    Serial.println();
+    Serial.println(actuator_raw[NUM_CHANNELS-1]);
 }
 
 /* output a binary representation of the IMU data (note: scaled to 16bit values) */
@@ -606,10 +608,10 @@ void write_baro_ascii()
     Serial.print(baro.get_temperature());
     Serial.print(" Altitude:");
     Serial.print(baro.get_altitude());
-    Serial.printf(" climb=%.2f samples=%u",
-                  (double)baro.get_climb_rate(),
-                  (unsigned)baro.get_pressure_samples());
-    Serial.println();
+    Serial.print(" climb=");
+    Serial.print(baro.get_climb_rate());
+    Serial.print(" samples="),
+    Serial.println(baro.get_pressure_samples());
 }
 
 /* output a binary representation of the analog input data */
@@ -667,9 +669,10 @@ void write_analog_ascii()
     // output servo data
     Serial.print("Analog:");
     for ( int i = 0; i < MAX_ANALOG_INPUTS - 1; i++ ) {
-        Serial.printf("%.2f ", (float)analog[i] / 64.0);
+        Serial.print((float)analog[i] / 64.0, 2);
+        Serial.print(" ");
     }
-    Serial.printf("%.2f\n", (float)analog[MAX_ANALOG_INPUTS-1] / 1000.0);
+    Serial.println((float)analog[MAX_ANALOG_INPUTS-1] / 1000.0, 2);
     /*
     Serial.printf("%.2f ", vcc_average);
     Serial.printf("%.2f ", (float)battery_voltage);
@@ -749,9 +752,13 @@ void write_status_info_ascii()
     } else {
         counter = MASTER_HZ * 10 - 1; // a message every 10 seconds (-1 so we aren't off by one frame) 
     }
-    Serial.printf("SN: %d ", read_serial_number());
-    Serial.printf("Firmware: %d ", FIRMWARE_REV);
-    Serial.printf("Main loop: %d ", MASTER_HZ);
-    Serial.printf("Baud: %ld\n", DEFAULT_BAUD);
+    Serial.print("SN: ");
+    Serial.println(read_serial_number());
+    Serial.print("Firmware: ");
+    Serial.println(FIRMWARE_REV);
+    Serial.print("Main loop: ");
+    Serial.println( MASTER_HZ);
+    Serial.print("Baud: ");
+    Serial.println(DEFAULT_BAUD);
 }
 

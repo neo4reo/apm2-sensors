@@ -59,7 +59,8 @@ void pwm_set_rates() {
     Serial.print("PWM rates: ");
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         uint16_t rate = config.pwm_hz[i];
-        Serial.printf("%d, ", rate);
+        Serial.print(rate);
+        Serial.print(" ");
 	uint32_t ch_mask = _BV(i);
         APM_RC.SetFastOutputChannels( ch_mask, rate );
     }

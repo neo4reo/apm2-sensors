@@ -12,6 +12,8 @@ v2.30 release notes -
 Tighter main loop timing, synced with IMU samples.  (Removes a free-running
 loop which leads to timing jitter and indeterminant latencies.)
 
+Reduced code size by 10%.
+
 Quite a few changes to remove prog_char from the libraries and remove
 FastSerial in favor of HardwareSerial.
 

@@ -291,7 +291,6 @@ void loop()
     read_analogs();
     
     if ( binary_output ) {
-        output_counter += write_imu_bin();
         output_counter += write_pilot_in_bin();
         output_counter += write_gps_bin();
         output_counter += write_baro_bin();
@@ -299,14 +298,15 @@ void loop()
         // do a little extra dance with the resturn value because write_status_info_bin() can reset output_counter (but that gets ignored if we do the math in one step)
         uint8_t result = write_status_info_bin();
         output_counter += result;
+        output_counter += write_imu_bin(); // write IMU data last as an implicit 'end of data frame' marker.
     } else {
-        write_imu_ascii();
         // write_pilot_in_ascii();
         // write_actuator_out_ascii();
         write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
         write_status_info_ascii();
+        write_imu_ascii();
     }
 }
 

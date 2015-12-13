@@ -1,12 +1,16 @@
 /*
         APM2 Sensors Firmware
-	Written by Curtis L. Olson, Airborne Technologies, Inc. colson@atiak.com
+	Written by Curtis L. Olson, FlightGear/University of Minnesota/Airborne Technologies, Inc. curtolson@flightgear.org
 
         Provides all the APM2 sensor data via binary checksummed data packets sent over the console
         port.  Additionally will accept binary checksummed data packets to command the servo positions
         in autopilot mode.
         
-        Additional documentation to follow ...
+        Also includes 'smart receiver' mode and onboard control surface mixing.
+        
+        Simple 3-axis stability dampening system.
+        
+        (Originally based on Arduplane ardupilot-mega2560 firmware.)
 */
 
 ///////////////////////////////////////////

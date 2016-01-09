@@ -1,3 +1,8 @@
+#include <AP_Compass_HIL.h>
+#include <AP_Compass.h>
+#include <Compass.h>
+#include <AP_Compass_HMC5843.h>
+
 /*
         APM2 Sensors Firmware
 	Written by Curtis L. Olson, FlightGear/University of Minnesota/Airborne Technologies, Inc. curtolson@flightgear.org
@@ -20,7 +25,8 @@
 // Firmware rev (needs to be updated manually)
 #define FIRMWARE_REV 223
 
-// this is the master loop update rate
+// this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
+// we can go without saturating our uart link to the host.
 #define MASTER_HZ 100
 // #define MASTER_HZ 200
 
@@ -63,6 +69,10 @@
 //#define VOLTAGE2_ANALOG_PIN 4
 // ANALOG_PIN_VCC is defined in libraries/AP_AnalogSource/AP_Analog_Source_Arduino.h
 
+// these need to be defined before including HardwareSerial.h
+#define SERIAL_TX_BUFFER_SIZE 256
+#define SERIAL_RX_BUFFER_SIZE 256
+
 ///////////////////////////////////////////
 // End Hardware specific config section
 ///////////////////////////////////////////
@@ -71,7 +81,7 @@
 #include <Arduino_Mega_ISR_Registry.h>
 
 // APM Library Includes
-// #include <FastSerial.h>
+#include <HardwareSerial.h>
 #include <AP_Common.h>
 #include <I2C.h>
 #include <SPI.h>
@@ -178,8 +188,8 @@ void setup()
     Serial.begin(DEFAULT_BAUD);
     Serial.println("\nAPM2 Sensors");
 
-    // test (or possibly initial setup/config)
-    // set_serial_number(201);
+    // The following code (when enabled) will force setting a specific device serial number.
+    // set_serial_number(103);
     // read_serial_number();
     
     if ( !config_read_eeprom() ) {
@@ -250,8 +260,8 @@ void setup()
     // prime the pump to avoid overflow in the "averaging" logic
     read_analogs();
     
-    //Serial2.begin(DEFAULT_BAUD);
-    //Serial2.println("APM2 Aux Port");
+    Serial2.begin(100000, SERIAL_8E2);
+    Serial.println("SBUS on UART2 (SERIAL_8E2)");
    
     loop_timeout = millis() + 2*dt_millis;
     write_millis = millis();
@@ -311,6 +321,7 @@ void loop()
         // write_analog_ascii();
         write_status_info_ascii();
         write_imu_ascii();
+        sbus_read();
     }
 }
 

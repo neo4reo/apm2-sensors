@@ -8,7 +8,12 @@ receiver values in, and driving output servos so for some applications
 it could serve as a robot controller.
 
 
-## v2.30 release notes
+## v2.40 release notes -
+
+* SBUS (in) support via UART2 (and an inverter cable.)
+
+
+## v2.30 release notes - December 13, 2015
 
 Tighter main loop timing, synced with IMU samples.  (Removes a free-running
 loop which leads to timing jitter and indeterminant latencies.)
@@ -29,6 +34,7 @@ loop which leads to timing jitter and indeterminant latencies.)
 * Report bytes transfer rate to host in the config/status message.
 
 * Better support for saving configuration parameters in the EEPROM.
+
 
 ## v2.20 release notes - April 21, 2015
 
@@ -57,6 +63,7 @@ the need to send the configuration values to the device every boot.
 Presumably this would enable the device to survive an inflight reboot
 without losing it's config, or even run 'headless' without a host
 computer once it has been setup (i.e. as in a smart RC receiver mode.)
+
 
 ## v2.10 release notes - February 16, 2015
 

@@ -2,12 +2,6 @@
 
 #include "config.h"
 
-#define PWM_CENTER 1520
-#define PWM_HALF_RANGE 413
-#define PWM_RANGE (PWM_HALF_RANGE * 2)
-#define PWM_MIN (PWM_CENTER - PWM_HALF_RANGE)
-#define PWM_MAX (PWM_CENTER + PWM_HALF_RANGE)
-
 // Actuator gain (reversing) commands, format is cmd(byte) ch(byte) gain(float)
 #define ACT_GAIN_DEFAULTS 0
 #define ACT_GAIN_SET 1
@@ -31,7 +25,7 @@
 
 
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
-bool symmetrical[NUM_CHANNELS] = {1, 1, 0, 1, 0, 0, 0, 0};
+bool symmetrical[MAX_CHANNELS] = {1, 1, 0, 1, 0, 0, 0, 0};
 
 // official flight command values.  These could source from the RC receiver or the autopilot depending on the auto/manual
 // selection switch state.  These are pre-mix commands and will be mixed and written to the actuators for both manual and
@@ -46,31 +40,17 @@ float ch7_cmd = 0.0;
 float ch8_cmd = 0.0;
 
 
-// reset pwm rates to safe startup defaults
+// reset pwm output rates to safe startup defaults
 void pwm_rate_defaults() {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+    for ( int i = 0; i < MAX_CHANNELS; i++ ) {
         config.pwm_hz[i] = 50;
     }
 }
 
 
-// reset pwm rates to safe startup defaults
-void pwm_set_rates() {
-    Serial.print("PWM rates: ");
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        uint16_t rate = config.pwm_hz[i];
-        Serial.print(rate);
-        Serial.print(" ");
-	uint32_t ch_mask = _BV(i);
-        APM_RC.SetFastOutputChannels( ch_mask, rate );
-    }
-    Serial.println();
-}
-
-
 // reset actuator gains (reversing) to startup defaults
 void act_gain_defaults() {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+    for ( int i = 0; i < MAX_CHANNELS; i++ ) {
         config.act_gain[i] = 1.0;
     }
 }
@@ -116,7 +96,7 @@ void mixing_defaults() {
 
 bool act_gain_command_parse(byte *buf) {
     uint8_t ch = buf[0];
-    if ( ch >= NUM_CHANNELS ) {
+    if ( ch >= MAX_CHANNELS ) {
         return false;
     }
 
@@ -215,51 +195,8 @@ bool mixing_command_parse(byte *buf) {
 }
 
 
-// compute normalized command values from the raw pwm values
-void raw2norm( uint16_t raw[NUM_CHANNELS], float norm[NUM_CHANNELS] ) {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        // convert to normalized form
-        if ( symmetrical[i] ) {
-            // i.e. aileron, rudder, elevator
-	    norm[i] = (float)((int)raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
-        } else {
-	    // i.e. throttle, flaps
-	    norm[i] = (float)((int)raw[i] - PWM_MIN) / PWM_RANGE;
-        }
-    }
-}
-
-
-// compute raw pwm values from normalized command values.
-// (handle actuator reversing here.)
-void norm2raw( float norm[NUM_CHANNELS], uint16_t raw[NUM_CHANNELS] ) {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        // convert to pulse length (special case ch6 when in flaperon mode)
-        if ( symmetrical[i] || (i == 5 && config.mix_flaperon) ) {
-            // i.e. aileron, rudder, elevator
-            //Serial.println(i);
-            //Serial.println(config.act_rev[i]);
-	    raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i] * config.act_gain[i]);
-        } else {
-	    // i.e. throttle, flaps
-            if ( config.act_gain[i] > 0.0 ) {
-	        raw[i] = PWM_MIN + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
-            } else {
-	        raw[i] = PWM_MAX + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
-            }
-        }
-        if ( raw[i] < PWM_MIN ) {
-            raw[i] = PWM_MIN;
-        }
-        if ( raw[i] > PWM_MAX ) {
-            raw[i] = PWM_MAX;
-        }
-    }
-}
-
-
 // compute the sas compensation in normalized 'command' space so that we can do proper output channel mixing later
-void sas_update( float control_norm[NUM_CHANNELS] ) {
+void sas_update( float control_norm[MAX_CHANNELS] ) {
     // mixing modes that work at the 'command' level (before actuator value assignment)
     
     float tune = 1.0;
@@ -283,7 +220,7 @@ void sas_update( float control_norm[NUM_CHANNELS] ) {
 }
 
 // compute the actuator (servo) values for each channel.  Handle all the requested mixing modes here.
-void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_6, bool do_ch7, bool do_ch8 ) {
+void mixing_update( float control_norm[MAX_CHANNELS], bool do_ch1_6, bool do_ch7, bool do_ch8 ) {
     if ( do_ch1_6 ) {
         aileron_cmd = control_norm[0];
         elevator_cmd = control_norm[1];
@@ -347,57 +284,17 @@ void mixing_update( float control_norm[NUM_CHANNELS], bool do_ch1_6, bool do_ch7
     }
     
     // compute raw actuator output values from the normalized values
-    norm2raw( actuator_norm, actuator_raw );
-}
-
-
-// read the receiver if new data is available.  If manual mode requested, immediate do the mixing and send the result to the servos
-int receiver_process() {
-    // New radio frame?
-    if ( APM_RC.GetState() == 1 ) {
-        // read channel data
-	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-            // save raw pulse value
-            receiver_raw[i] = APM_RC.InputCh(i);
-	}
- 
-        raw2norm( receiver_raw, receiver_norm );
-        
-        if ( receiver_raw[CH_8] > 1500 ) {
-            // manual pass through requested, let's get it done right now
-            sas_update( receiver_norm );
-            mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );
-            actuator_update();
-        } else {
-            // autopilot mode, but let's update the sas gain tuning channel if requested
-            mixing_update( receiver_norm, false /* ch1-6 */, config.sas_ch7gain /* ch7 */, false /* no ch8 */ );
-        }
-        return 1;
-    }
-    return 0;
+    pwm_norm2raw( actuator_norm, actuator_raw );
 }
 
 
 // set default raw actuator values
 void actuator_set_defaults() {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        if ( symmetrical[i] ) {
-            // i.e. aileron, rudder, elevator
-	    actuator_raw[i] = PWM_CENTER;
-        } else {
-            // i.e. throttle, flaps
-    	    actuator_raw[i] = PWM_MIN;
-        }
+    for ( int i = 0; i < MAX_CHANNELS; i++ ) {
+        actuator_norm[i] = 0.0;
     }
+    pwm_norm2raw(actuator_norm, actuator_raw);
 }
 
 
-// write the raw actuator values to the RC system
-int actuator_update() {
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        APM_RC.OutputCh(i, actuator_raw[i] );
-    }
-
-    return 0;
-}
 

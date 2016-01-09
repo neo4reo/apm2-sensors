@@ -59,27 +59,27 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
     int counter = 0;
     bool result = false;
 
-    if ( id == FLIGHT_COMMAND_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
+    if ( id == FLIGHT_COMMAND_PACKET_ID && message_size == MAX_CHANNELS * 2 ) {
 	/* flight commands are 2 bytes, lo byte first, then hi byte.
 	 * Integer values correspond to servo pulse lenght in us 1100
 	 * is a normal minimum value, 1500 is center, 1900 is a normal
 	 * maximum value although the min and max can be extended a
 	 * bit. */
-	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+	for ( int i = 0; i < MAX_CHANNELS; i++ ) {
 	    byte lo = buf[counter++];
 	    byte hi = buf[counter++];
 	    autopilot_raw[i] = hi*256 + lo;
 	}
-	raw2norm( autopilot_raw, autopilot_norm );
+	pwm_raw2norm( autopilot_raw, autopilot_norm );
     
-	if ( receiver_raw[CH_8] < 1500 ) {
+	if ( receiver_norm[CH_8] < -0.5 ) {
 	    // autopilot mode active (determined elsewhere when each
 	    // new receiver frame is ready) mix the inputs and write
 	    // the actuator outputs now
             sas_update( autopilot_norm );
             // don't overwrite manual ch7 value if sas_ch7tune enabled
 	    mixing_update( autopilot_norm, true /* ch1-6 */, !config.sas_ch7tune /* ch7 */, true /* no ch8 */ );
-	    actuator_update();
+	    pwm_update();
 	} else {
 	    // we are in manual mode
 	    // update ch8 only from the autopilot.  We don't pass the
@@ -123,14 +123,14 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	result = true;
 #endif
 
-    } else if ( id == PWM_RATE_PACKET_ID && message_size == NUM_CHANNELS * 2 ) {
+    } else if ( id == PWM_RATE_PACKET_ID && message_size == MAX_CHANNELS * 2 ) {
 	//Serial.println("read PWM command");
 	/* note that CH1/CH2, CH3/CH4/CH5, and CH6/CH7/CH8 run off
 	 * grouped timers so setting any of the group will also force
 	 * the same rate for the other channels in the group, channels
 	 * with rate of 0 are left untouched (but will be affected if
 	 * another group member rate is set.) */
-	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+	for ( int i = 0; i < MAX_CHANNELS; i++ ) {
 	    uint8_t lo = buf[counter++];
 	    uint8_t hi = buf[counter++];
 	    uint16_t rate = hi*256 + lo;
@@ -325,11 +325,11 @@ uint8_t write_pilot_in_bin()
     Serial.write( buf, 1 );
 
     // packet length (1 byte)
-    buf[0] = 2 * NUM_CHANNELS;
+    buf[0] = 2 * MAX_CHANNELS;
     Serial.write( buf, 1 );
 
     // servo data
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+    for ( int i = 0; i < MAX_CHANNELS; i++ ) {
 	long val = receiver_raw[i];
 	int hi = val / 256;
 	int lo = val - (hi * 256);
@@ -354,23 +354,23 @@ void write_pilot_in_ascii()
 {
     // receiver input data
     Serial.print("RCIN:");
-    for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
-        Serial.print(receiver_raw[i]);
+    for ( int i = 0; i < MAX_CHANNELS - 1; i++ ) {
+        Serial.print(receiver_raw[i], DEC);
         Serial.print(" ");
     }
-    Serial.println(receiver_raw[NUM_CHANNELS-1]);
+    Serial.println(receiver_raw[MAX_CHANNELS-1], DEC);
 }
 
 void write_actuator_out_ascii()
 {
     // actuator output
     Serial.print("RCOUT:");
-    for ( int i = 0; i < NUM_CHANNELS - 1; i++ ) {
+    for ( int i = 0; i < MAX_CHANNELS - 1; i++ ) {
 
         Serial.print(actuator_raw[i]);
         Serial.print(" ");
     }
-    Serial.println(actuator_raw[NUM_CHANNELS-1]);
+    Serial.println(actuator_raw[MAX_CHANNELS-1]);
 }
 
 /* output a binary representation of the IMU data (note: scaled to 16bit values) */

@@ -85,7 +85,6 @@
 #include <AP_Common.h>
 #include <I2C.h>
 #include <SPI.h>
-#include <APM_RC.h> // ArduPilot Mega RC Library
 #include <AP_Math.h>
 #include <AP_PeriodicProcess.h>  // ArduPilot Mega TimerProcess
 #include <AP_Baro.h>        // ArduPilot barometer library
@@ -100,6 +99,7 @@
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <LowPassFilter.h>	// LowPassFilter class (inherits from Filter class)
 #include <AP_Airspeed.h>
+#include <APM_RC.h> // ArduPilot Mega RC Library
 
 #include "config.h"
 
@@ -112,19 +112,17 @@ AP_TimerProcess timer_scheduler;
 
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
-APM_RC_APM2 APM_RC;
-
 // flight commands from the RC receiver
-uint16_t receiver_raw[NUM_CHANNELS];
-float receiver_norm[NUM_CHANNELS];
+uint16_t receiver_raw[MAX_CHANNELS];
+float receiver_norm[MAX_CHANNELS];
 
 // flight commands from the autopilot
-uint16_t autopilot_raw[NUM_CHANNELS];
-float autopilot_norm[NUM_CHANNELS];
+uint16_t autopilot_raw[MAX_CHANNELS];
+float autopilot_norm[MAX_CHANNELS];
 
 // actuator outputs after mixing
-uint16_t actuator_raw[NUM_CHANNELS];
-float actuator_norm[NUM_CHANNELS];
+uint16_t actuator_raw[MAX_CHANNELS];
+float actuator_norm[MAX_CHANNELS];
 
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53
 AP_InertialSensor_MPU6000 ins( CONFIG_MPU6000_CHIP_SELECT_PIN );
@@ -155,6 +153,9 @@ AP_GPS_UBLOX      g_gps_driver(&Serial1);
 // Barometer
 AP_Baro_MS5611 baro;
 
+// APM2 RC/PWM system (needs to be defined globally here)
+APM_RC_APM2 APM_RC;
+
 unsigned long output_counter = 0;
 unsigned long write_millis = 0;
 
@@ -171,23 +172,12 @@ void setup()
     isr_registry.init();
     timer_scheduler.init( &isr_registry );
 
-    // For a Futaba T6EX 2.4Ghz FASST system:
-    //   Assuming all controls are at default center trim, no range scaling or endpoint adjustments:
-    //   Minimum position = 1111
-    //   Center position = 1525
-    //   Max position = 1939
-    
-    APM_RC.Init(&isr_registry);	 // APM Radio initialization
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        APM_RC.enable_out(i);
-    }
-    // set default safe values for actuator outputs
-    actuator_set_defaults();
-    actuator_update();
-     
     Serial.begin(DEFAULT_BAUD);
     Serial.println("\nAPM2 Sensors");
 
+    // Init the RC subsystem for PWM inputs and outputs
+    pwm_init();
+    
     // The following code (when enabled) will force setting a specific device serial number.
     // set_serial_number(103);
     // read_serial_number();
@@ -199,19 +189,12 @@ void setup()
     
     // config.act_gain[0] = -1.0;
     // config.act_gain[2] = -1.0;
-    for ( int i = 0; i < NUM_CHANNELS; i++ ) {
+    for ( int i = 0; i < MAX_CHANNELS; i++ ) {
         Serial.print("ch ");
         Serial.print(i);
         Serial.print(" gain: ");
         Serial.println(config.act_gain[i]);
     }
-    
-    // set the PWM output rateas as defined above
-    //uint32_t ch_mask = _BV(CH_1) | _BV(CH_2) | _BV(CH_3) | _BV(CH_4) | _BV(CH_5) | _BV(CH_6) | _BV(CH_7) | _BV(CH_8);
-    //Serial.print("PWM rate: ");
-    //Serial.println(config.pwm_hz);
-    //APM_RC.SetFastOutputChannels( ch_mask, config.pwm_hz );
-    pwm_set_rates();
     
     Serial.print("Firmware Revision: ");
     Serial.println(FIRMWARE_REV);
@@ -290,7 +273,9 @@ void loop()
 
     // Fetch new radio frame (and if manual override set, mix the
     // inputs and write the actuator commands to the APM2_RC system)
-    receiver_process();
+    // note, the expectation is that only sbus *or* pwm will be connected, otherwise the two will 'fight' each other.
+    pwm_process();
+    while ( sbus_process() ); // keep processing while there is data in the uart buffer
     
     // suck in any host commmands (would I want to check for host commands at a higher rate? imu rate?)
     while ( read_commands() );
@@ -314,14 +299,13 @@ void loop()
         output_counter += result;
         output_counter += write_imu_bin(); // write IMU data last as an implicit 'end of data frame' marker.
     } else {
-        // write_pilot_in_ascii();
+        write_pilot_in_ascii();
         // write_actuator_out_ascii();
-        write_gps_ascii();
+        // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
         // write_status_info_ascii();
         // write_imu_ascii();
-        while ( sbus_read() );
     }
 }
 

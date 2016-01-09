@@ -13,22 +13,22 @@ it could serve as a robot controller.
 Tighter main loop timing, synced with IMU samples.  (Removes a free-running
 loop which leads to timing jitter and indeterminant latencies.)
 
-Reduced code size by 10%.
+* Reduced code size by 10%.
 
-Quite a few changes to remove prog_char from the libraries and remove
-FastSerial in favor of HardwareSerial.
+* Quite a few changes to remove prog_char from the libraries and
+  remove FastSerial in favor of HardwareSerial.
 
-Support for compiling with newer version of the arduino IDE.
+* Support for compiling with newer version of the arduino IDE.
 
-Make PWM center and range match Futaba 'standard'.
+* Make PWM center and range match Futaba 'standard'.
 
-Add commands to setup SAS mode and adjust gains from host computer.
+* Add commands to setup SAS mode and adjust gains from host computer.
 
-Updated several packet formats and ID numbers.
+* Updated several packet formats and ID numbers.
 
-Report bytes transfer rate to host in the config/status message.
+* Report bytes transfer rate to host in the config/status message.
 
-Better support for saving configuration parameters in the EEPROM.
+* Better support for saving configuration parameters in the EEPROM.
 
 ## v2.20 release notes - April 21, 2015
 
@@ -76,15 +76,14 @@ space.  Then the final result is converted back to PWM pulses and sent
 to the actuators.
 
 The convention used (at the APM2 input side) is:
-
-Ch1: aileron
-Ch2: elevator
-Ch3: throttle
-Ch4: rudder
-Ch5: gear
-Ch6: flaps
-Ch7: Aux1
-Ch8: Manual/Auto selection switch.
+* Ch1: aileron
+* Ch2: elevator
+* Ch3: throttle
+* Ch4: rudder
+* Ch5: gear
+* Ch6: flaps
+* Ch7: Aux1
+* Ch8: Manual/Auto selection switch.
 
 Elevon mixing drives output channels 1 & 2.
 

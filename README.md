@@ -1,13 +1,14 @@
-apm2-sensors - replacement firmware for an inexpensive APM2 board.
-This firmware converts the APM2 into a standalone sensors module
-and adds a full suite of inertial and position sensors to any host
-computer or application.  This firmware maintains APM2 support for
-reading RC receiver values in, and driving output servos so for some
-applications it could serve as a robot controller.
+# apm2-sensors
+
+Replacement firmware for an inexpensive APM2 board.  This firmware
+converts the APM2 into a standalone sensors module and adds a full
+suite of inertial and position sensors to any host computer or
+application.  This firmware maintains APM2 support for reading RC
+receiver values in, and driving output servos so for some applications
+it could serve as a robot controller.
 
 
-v2.30 release notes -
-========================================
+## v2.30 release notes
 
 Tighter main loop timing, synced with IMU samples.  (Removes a free-running
 loop which leads to timing jitter and indeterminant latencies.)
@@ -29,15 +30,15 @@ Report bytes transfer rate to host in the config/status message.
 
 Better support for saving configuration parameters in the EEPROM.
 
-
-v2.20 release notes - April 21, 2015
-========================================
+## v2.20 release notes - April 21, 2015
 
 Add a simple 3-axis stability augmentation system.  Essentially it is:
 
+```
   aileron_cmd += roll_gyro * gain
   elevator_cmd += elevator_gyro * gain
   rudder_cmd += yaw_gyro * gain
+```
 
 Each axis can be enabled/disabled independently and each has it's own
 unique gain value.
@@ -57,9 +58,7 @@ Presumably this would enable the device to survive an inflight reboot
 without losing it's config, or even run 'headless' without a host
 computer once it has been setup (i.e. as in a smart RC receiver mode.)
 
-
-v2.10 release notes - February 16, 2015
-=======================================
+## v2.10 release notes - February 16, 2015
 
 The major functionality change in this release is a move towards doing
 all mixing modes onboard the APM2 rather than on the RC transmitter

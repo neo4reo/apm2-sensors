@@ -319,9 +319,9 @@ void loop()
         write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
-        write_status_info_ascii();
-        write_imu_ascii();
-        sbus_read();
+        // write_status_info_ascii();
+        // write_imu_ascii();
+        while ( sbus_read() );
     }
 }
 

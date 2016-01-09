@@ -23,7 +23,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated manually)
-#define FIRMWARE_REV 223
+#define FIRMWARE_REV 240
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.

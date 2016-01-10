@@ -1,7 +1,9 @@
+#if 0 // enable for some future compass testing
 #include <AP_Compass_HIL.h>
 #include <AP_Compass.h>
 #include <Compass.h>
 #include <AP_Compass_HMC5843.h>
+#endif
 
 /*
         APM2 Sensors Firmware
@@ -22,7 +24,7 @@
 // Config section
 ///////////////////////////////////////////
 
-// Firmware rev (needs to be updated manually)
+// Firmware rev (needs to be updated here manually to match release number)
 #define FIRMWARE_REV 240
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as

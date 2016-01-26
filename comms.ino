@@ -578,7 +578,10 @@ uint8_t write_baro_bin()
     // packet length (1 byte)
     buf[0] = size;
     Serial.write( buf, 1 );
-
+    
+    // update the filters so climb rate works
+    baro.get_altitude();
+    
     *(float *)packet = baro.get_pressure(); packet += 4;
     *(float *)packet = baro.get_temperature(); packet += 4;
     *(float *)packet = baro.get_climb_rate(); packet += 4;

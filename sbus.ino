@@ -61,11 +61,11 @@ uint16_t sbus_raw[MAX_CHANNELS];
 
 void sbus_parse() {
     if ( sbus_data.failsafe_act ) {
-        Serial.println("SBUS: failsafe activated!");
+        //Serial.println("SBUS: failsafe activated!");
         return;      
     }
     if ( sbus_data.frame_lost ) {
-        Serial.println("SBUS: frame lost");
+        //Serial.println("SBUS: frame lost");
         return;
     }
 

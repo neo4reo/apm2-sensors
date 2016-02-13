@@ -11,6 +11,8 @@ it could serve as a robot controller.
 ## v2.40 release notes -
 
 * SBUS (in) support via UART2 (and an inverter cable.)
+* Fixed a long standing bug where the airdata system didn't properly
+  output climb rate.
 
 
 ## v2.30 release notes - December 13, 2015

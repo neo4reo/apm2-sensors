@@ -57,6 +57,7 @@ typedef union {
     
 static SBUS_DATA_U sbus_data;
 static uint16_t sbus_ch_data[ SBUS_CH_MAX ];
+uint16_t sbus_raw[MAX_CHANNELS];
 
 void sbus_parse() {
     if ( sbus_data.failsafe_act ) {
@@ -113,12 +114,13 @@ void sbus_parse() {
     
     // copy sbus values to receiver_raw (just the first MAX_CHANNELS)
     for ( int i = 0; i < MAX_CHANNELS; i++ ) {
-        receiver_raw[i] = sbus_ch_data[i];
+        sbus_raw[i] = sbus_ch_data[i];
     }
     
-    sbus_raw2norm(receiver_raw, receiver_norm);
+    sbus_raw2norm(sbus_raw, receiver_norm);
+    pwm_norm2pwm(receiver_norm, receiver_pwm);
     
-    if ( receiver_raw[CH_8] > SBUS_CENTER_VALUE - SBUS_QUARTER_RANGE ) {
+    if ( sbus_raw[CH_8] > SBUS_CENTER_VALUE - SBUS_QUARTER_RANGE ) {
         // manual pass through requested, let's get it done right now
         sas_update( receiver_norm );
         mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );

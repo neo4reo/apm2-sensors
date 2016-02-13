@@ -1,25 +1,13 @@
-// For a Futaba T6EX 2.4Ghz FASST system:
-//   Assuming all controls are at default center trim, no range scaling or endpoint adjustments:
-//   Minimum position = 1107
-//   Center position = 1520
-//   Max position = 1933
-#define PWM_CENTER 1520
-#define PWM_HALF_RANGE 413
-#define PWM_QUARTER_RANGE 206
-#define PWM_RANGE (PWM_HALF_RANGE * 2)
-#define PWM_MIN (PWM_CENTER - PWM_HALF_RANGE)
-#define PWM_MAX (PWM_CENTER + PWM_HALF_RANGE)
-
 // compute normalized command values from the raw pwm values
-void pwm_raw2norm( uint16_t *raw, float *norm ) {
+void pwm_pwm2norm( uint16_t *pwm, float *norm ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to normalized form
         if ( symmetrical[i] ) {
             // i.e. aileron, rudder, elevator
-	    norm[i] = (float)((int)raw[i] - PWM_CENTER) / PWM_HALF_RANGE;
+	    norm[i] = (float)((int)pwm[i] - PWM_CENTER) / PWM_HALF_RANGE;
         } else {
 	    // i.e. throttle, flaps
-	    norm[i] = (float)((int)raw[i] - PWM_MIN) / PWM_RANGE;
+	    norm[i] = (float)((int)pwm[i] - PWM_MIN) / PWM_RANGE;
         }
     }
 }
@@ -27,27 +15,27 @@ void pwm_raw2norm( uint16_t *raw, float *norm ) {
 
 // compute raw pwm values from normalized command values.
 // (handle actuator reversing here.)
-void pwm_norm2raw( float *norm, uint16_t *raw ) {
+void pwm_norm2pwm( float *norm, uint16_t *pwm ) {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
         // convert to pulse length (special case ch6 when in flaperon mode)
         if ( symmetrical[i] || (i == 5 && config.mix_flaperon) ) {
             // i.e. aileron, rudder, elevator
             //Serial.println(i);
             //Serial.println(config.act_rev[i]);
-	    raw[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i] * config.act_gain[i]);
+	    pwm[i] = PWM_CENTER + (int)(PWM_HALF_RANGE * norm[i] * config.act_gain[i]);
         } else {
 	    // i.e. throttle, flaps
             if ( config.act_gain[i] > 0.0 ) {
-	        raw[i] = PWM_MIN + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
+	        pwm[i] = PWM_MIN + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
             } else {
-	        raw[i] = PWM_MAX + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
+	        pwm[i] = PWM_MAX + (int)(PWM_RANGE * norm[i] * config.act_gain[i]);
             }
         }
-        if ( raw[i] < PWM_MIN ) {
-            raw[i] = PWM_MIN;
+        if ( pwm[i] < PWM_MIN ) {
+            pwm[i] = PWM_MIN;
         }
-        if ( raw[i] > PWM_MAX ) {
-            raw[i] = PWM_MAX;
+        if ( pwm[i] > PWM_MAX ) {
+            pwm[i] = PWM_MAX;
         }
     }
 }
@@ -94,12 +82,12 @@ int pwm_process() {
         // read channel data
 	for ( int i = 0; i < NUM_CHANNELS; i++ ) {
             // save raw pulse value
-            receiver_raw[i] = APM_RC.InputCh(i);
+            receiver_pwm[i] = APM_RC.InputCh(i);
 	}
  
-        pwm_raw2norm( receiver_raw, receiver_norm );
+        pwm_pwm2norm( receiver_pwm, receiver_norm );
         
-        if ( receiver_raw[CH_8] > PWM_CENTER - PWM_QUARTER_RANGE ) {
+        if ( receiver_pwm[CH_8] > PWM_CENTER - PWM_QUARTER_RANGE ) {
             // manual pass through requested, let's get it done right now
             sas_update( receiver_norm );
             mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );
@@ -117,7 +105,7 @@ int pwm_process() {
 // write the raw actuator values to the RC system
 int pwm_update() {
     for ( int i = 0; i < NUM_CHANNELS; i++ ) {
-        APM_RC.OutputCh(i, actuator_raw[i] );
+        APM_RC.OutputCh(i, actuator_pwm[i] );
     }
 
     return 0;

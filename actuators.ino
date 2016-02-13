@@ -283,8 +283,8 @@ void mixing_update( float control_norm[MAX_CHANNELS], bool do_ch1_6, bool do_ch7
         }
     }
     
-    // compute raw actuator output values from the normalized values
-    pwm_norm2raw( actuator_norm, actuator_raw );
+    // compute pwm actuator output values from the normalized values
+    pwm_norm2pwm( actuator_norm, actuator_pwm );
 }
 
 
@@ -293,7 +293,7 @@ void actuator_set_defaults() {
     for ( int i = 0; i < MAX_CHANNELS; i++ ) {
         actuator_norm[i] = 0.0;
     }
-    pwm_norm2raw(actuator_norm, actuator_raw);
+    pwm_norm2pwm(actuator_norm, actuator_pwm);
 }
 
 

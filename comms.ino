@@ -29,8 +29,6 @@
 #define ANALOG_PACKET_ID 54
 #define STATUS_INFO_PACKET_ID 55
 
-#define ACTUATOR_PACKET_ID 60
-
 
 void ugear_cksum( byte hdr1, byte hdr2, byte *buf, byte size,
 		  byte *cksum0, byte *cksum1 )
@@ -68,9 +66,9 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	for ( int i = 0; i < MAX_CHANNELS; i++ ) {
 	    byte lo = buf[counter++];
 	    byte hi = buf[counter++];
-	    autopilot_raw[i] = hi*256 + lo;
+	    autopilot_pwm[i] = hi*256 + lo;
 	}
-	pwm_raw2norm( autopilot_raw, autopilot_norm );
+	pwm_pwm2norm( autopilot_pwm, autopilot_norm );
     
 	if ( receiver_norm[CH_8] < -0.5 ) {
 	    // autopilot mode active (determined elsewhere when each
@@ -330,7 +328,7 @@ uint8_t write_pilot_in_bin()
 
     // servo data
     for ( int i = 0; i < MAX_CHANNELS; i++ ) {
-	long val = receiver_raw[i];
+	long val = receiver_pwm[i];
 	int hi = val / 256;
 	int lo = val - (hi * 256);
 	packet[size++] = byte(lo);
@@ -355,10 +353,10 @@ void write_pilot_in_ascii()
     // receiver input data
     Serial.print("RCIN:");
     for ( int i = 0; i < MAX_CHANNELS - 1; i++ ) {
-        Serial.print(receiver_raw[i], DEC);
+        Serial.print(receiver_pwm[i], DEC);
         Serial.print(" ");
     }
-    Serial.println(receiver_raw[MAX_CHANNELS-1], DEC);
+    Serial.println(receiver_pwm[MAX_CHANNELS-1], DEC);
 }
 
 void write_actuator_out_ascii()
@@ -367,10 +365,10 @@ void write_actuator_out_ascii()
     Serial.print("RCOUT:");
     for ( int i = 0; i < MAX_CHANNELS - 1; i++ ) {
 
-        Serial.print(actuator_raw[i]);
+        Serial.print(actuator_pwm[i]);
         Serial.print(" ");
     }
-    Serial.println(actuator_raw[MAX_CHANNELS-1]);
+    Serial.println(actuator_pwm[MAX_CHANNELS-1]);
 }
 
 /* output a binary representation of the IMU data (note: scaled to 16bit values) */

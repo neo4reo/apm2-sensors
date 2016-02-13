@@ -19,6 +19,18 @@
 // TODO: make this configurable via an external command.
 #define DEFAULT_PWM_HZ 50
 
+// For a Futaba T6EX 2.4Ghz FASST system:
+//   Assuming all controls are at default center trim, no range scaling or endpoint adjustments:
+//   Minimum position = 1107
+//   Center position = 1520
+//   Max position = 1933
+#define PWM_CENTER 1520
+#define PWM_HALF_RANGE 413
+#define PWM_QUARTER_RANGE 206
+#define PWM_RANGE (PWM_HALF_RANGE * 2)
+#define PWM_MIN (PWM_CENTER - PWM_HALF_RANGE)
+#define PWM_MAX (PWM_CENTER + PWM_HALF_RANGE)
+
 
 //////////////////////////////////////////////////////////////////////////
 // config structure saved to eeprom

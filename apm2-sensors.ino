@@ -115,15 +115,15 @@ AP_TimerProcess timer_scheduler;
 bool binary_output = false; // start with ascii output (then switch to binary if we get binary commands in
 
 // flight commands from the RC receiver
-uint16_t receiver_raw[MAX_CHANNELS];
+uint16_t receiver_pwm[MAX_CHANNELS];
 float receiver_norm[MAX_CHANNELS];
 
 // flight commands from the autopilot
-uint16_t autopilot_raw[MAX_CHANNELS];
+uint16_t autopilot_pwm[MAX_CHANNELS];
 float autopilot_norm[MAX_CHANNELS];
 
 // actuator outputs after mixing
-uint16_t actuator_raw[MAX_CHANNELS];
+uint16_t actuator_pwm[MAX_CHANNELS];
 float actuator_norm[MAX_CHANNELS];
 
 #  define CONFIG_MPU6000_CHIP_SELECT_PIN 53

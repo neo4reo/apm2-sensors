@@ -8,7 +8,7 @@ receiver values in, and driving output servos so for some applications
 it could serve as a robot controller.
 
 
-## v2.40 release notes -
+## v2.40 release notes - February 13, 2016
 
 * SBUS (in) support via UART2 (and an inverter cable.)
 * Fixed a long standing bug where the airdata system didn't properly

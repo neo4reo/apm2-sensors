@@ -391,7 +391,7 @@ uint8_t write_imu_bin()
     Serial.write( buf, 1 );
 
     // packet length (1 byte)
-    buf[0] = 2 * MAX_IMU_SENSORS;
+    buf[0] = 2 * MAX_IMU_SENSORS + 6 /* for mags */;
     Serial.write( buf, 1 );
 
     int16_t val = 0;
@@ -416,6 +416,20 @@ uint8_t write_imu_bin()
 	packet[size++] = byte(hi);
     }
   
+    // mag is a signed int16_t but transport it as unsigned
+    hi = (uint16_t)compass.mag_x / 256;
+    lo = (uint16_t)compass.mag_x - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+    hi = (uint16_t)compass.mag_y / 256;
+    lo = (uint16_t)compass.mag_y - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+    hi = (uint16_t)compass.mag_z / 256;
+    lo = (uint16_t)compass.mag_z - (hi * 256);
+    packet[size++] = byte(lo);
+    packet[size++] = byte(hi);
+
     val = imu_sensors[6] / MPU6000_TEMP_SCALE;
     hi = (uint16_t)val / 256;
     lo = (uint16_t)val - (hi * 256);
@@ -443,7 +457,10 @@ void write_imu_ascii()
         Serial.print(imu_sensors[i]);
         Serial.print(",");
     }
-    Serial.println(imu_sensors[6]);
+    Serial.print(compass.mag_x); Serial.print(",");
+    Serial.print(compass.mag_y); Serial.print(",");
+    Serial.print(compass.mag_z); Serial.print(",");
+    Serial.println(imu_sensors[6]); // temp C last
 }
 
 /* output a binary representation of the GPS data */

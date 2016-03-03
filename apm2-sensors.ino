@@ -1,10 +1,3 @@
-#if 0 // enable for some future compass testing
-#include <AP_Compass_HIL.h>
-#include <AP_Compass.h>
-#include <Compass.h>
-#include <AP_Compass_HMC5843.h>
-#endif
-
 /*
         APM2 Sensors Firmware
 	Written by Curtis L. Olson, FlightGear/University of Minnesota/Airborne Technologies, Inc. curtolson@flightgear.org
@@ -134,6 +127,9 @@ float imu_sensors[MAX_IMU_SENSORS];
 Vector3f imu_accel;
 Vector3f imu_gyro;
 
+// Magnetometer
+AP_Compass_HMC5843 compass;
+
 AP_AnalogSource_Arduino pitot_source(PITOT_SOURCE_ANALOG_PIN);
 AP_AnalogSource_Arduino current1_source(CURRENT1_ANALOG_PIN);
 AP_AnalogSource_Arduino battery1_source(VOLTAGE1_ANALOG_PIN);
@@ -226,7 +222,13 @@ void setup()
     imu.init(IMU::COLD_START, delay, flash_leds, &timer_scheduler);
     Serial.println("done.");
     delay(100);
-
+    
+    Serial.println("Initializing compass");
+    if (!compass.init()) {
+        Serial.println("compass initialization failed!");
+        while (1) ;
+    }
+    
     Serial.println("Initializing GPS (Expecting ublox hardware) ...");
     // standard gps rate
     Serial1.begin(38400);
@@ -272,7 +274,14 @@ void loop()
     imu_sensors[4] = imu_accel.y;
     imu_sensors[5] = imu_accel.z;
     imu_sensors[6] = ins.temperature();
-
+    
+    // Compass Update
+    compass.accumulate();
+    compass.read();
+    // Serial.print(compass.mag_x); Serial.print(", ");
+    // Serial.print(compass.mag_y); Serial.print(", ");
+    // Serial.println(compass.mag_z);
+    
     // Fetch new radio frame (and if manual override set, mix the
     // inputs and write the actuator commands to the APM2_RC system)
     // note, the expectation is that only sbus *or* pwm will be connected, otherwise the two will 'fight' each other.
@@ -301,13 +310,13 @@ void loop()
         output_counter += result;
         output_counter += write_imu_bin(); // write IMU data last as an implicit 'end of data frame' marker.
     } else {
-        write_pilot_in_ascii();
+        // write_pilot_in_ascii();
         // write_actuator_out_ascii();
         // write_gps_ascii();
         // write_baro_ascii();
         // write_analog_ascii();
         // write_status_info_ascii();
-        // write_imu_ascii();
+        write_imu_ascii();
     }
 }
 

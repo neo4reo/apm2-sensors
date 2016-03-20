@@ -270,7 +270,7 @@ void mixing_update( float control_norm[MAX_CHANNELS], bool do_ch1_6, bool do_ch7
             actuator_norm[1] = config.mix_Gea * aileron_cmd - config.mix_Gee * elevator_cmd;
         } else if ( config.mix_flaperon ) {
             actuator_norm[0] = config.mix_Gfa * aileron_cmd + config.mix_Gff * flap_cmd;
-            actuator_norm[5] = config.mix_Gfa * aileron_cmd - config.mix_Gff * flap_cmd;
+            actuator_norm[5] = -config.mix_Gfa * aileron_cmd + config.mix_Gff * flap_cmd;
         }
         // vtail mixing can't work with elevon mixing
         if ( config.mix_vtail && !config.mix_elevon) {

@@ -173,9 +173,6 @@ void setup()
     Serial.begin(DEFAULT_BAUD);
     Serial.println("\nAPM2 Sensors");
 
-    // Init the RC subsystem for PWM inputs and outputs
-    pwm_init();
-    
     // The following code (when enabled) will force setting a specific device serial number.
     // set_serial_number(103);
     // read_serial_number();
@@ -184,6 +181,9 @@ void setup()
         config_load_defaults();
         config_write_eeprom();
     }
+    
+    // Init the RC subsystem for PWM inputs and outputs
+    pwm_init();
     
     // config.act_gain[0] = -1.0;
     // config.act_gain[2] = -1.0;

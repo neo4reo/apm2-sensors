@@ -11,6 +11,7 @@ it could serve as a robot controller.
 ## v2.50 release notes -
 
 * Add magnetometer (raw) readings to IMU packet.
+* Validate (with one small fix) flaperon mixing.
 
 
 ## v2.40 release notes - February 13, 2016

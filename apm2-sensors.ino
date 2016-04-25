@@ -226,7 +226,6 @@ void setup()
     Serial.println("Initializing compass");
     if (!compass.init()) {
         Serial.println("compass initialization failed!");
-        while (1) ;
     }
     
     Serial.println("Initializing GPS (Expecting ublox hardware) ...");

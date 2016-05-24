@@ -12,6 +12,12 @@ it could serve as a robot controller.
 
 * Add magnetometer (raw) readings to IMU packet.
 * Validate (with one small fix) flaperon mixing.
+* If no gps detected within 20 seconds of main loop start, give up on
+  the gps.  The gps polling imposes a timing hit periodically that can lead
+  to hesitations and stuttering, so this gives up if no gps messages are
+  detected within some reasonable amount of time.  This enables the host
+  system to run without a gps connected to the apm2 if it has a separate
+  gps source.
 
 
 ## v2.40 release notes - February 13, 2016

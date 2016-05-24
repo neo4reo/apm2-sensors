@@ -156,6 +156,8 @@ APM_RC_APM2 APM_RC;
 
 unsigned long output_counter = 0;
 unsigned long write_millis = 0;
+unsigned long gps_millis = 0;
+bool found_gps = false;
 
 void setup()
 {
@@ -174,7 +176,7 @@ void setup()
     Serial.println("\nAPM2 Sensors");
 
     // The following code (when enabled) will force setting a specific device serial number.
-    // set_serial_number(103);
+    // set_serial_number(105);
     // read_serial_number();
     
     if ( !config_read_eeprom() ) {
@@ -251,6 +253,7 @@ void setup()
    
     loop_timeout = millis() + 2*dt_millis;
     write_millis = millis();
+    gps_millis = millis();
 }
 
 void loop()
@@ -291,7 +294,13 @@ void loop()
     while ( read_commands() );
 
     // GPS Update
-    g_gps->update();
+    if ( found_gps || (millis() < gps_millis + 20000) ) {
+        g_gps->update();
+    }
+    if ( !found_gps && g_gps->status() > 0 ) {
+        found_gps = true;
+        Serial.println("found gps");
+    }
     
     // Barometer update
     baro.read();
@@ -301,7 +310,9 @@ void loop()
     
     if ( binary_output ) {
         output_counter += write_pilot_in_bin();
-        output_counter += write_gps_bin();
+        if ( found_gps ) {
+            output_counter += write_gps_bin();
+        }
         output_counter += write_baro_bin();
         output_counter += write_analog_bin();
         // do a little extra dance with the resturn value because write_status_info_bin() can reset output_counter (but that gets ignored if we do the math in one step)
@@ -311,11 +322,13 @@ void loop()
     } else {
         // write_pilot_in_ascii();
         // write_actuator_out_ascii();
-        // write_gps_ascii();
+        if ( found_gps ) {
+            write_gps_ascii();
+        }
         // write_baro_ascii();
         // write_analog_ascii();
         // write_status_info_ascii();
-        write_imu_ascii();
+        // write_imu_ascii();
     }
 }
 

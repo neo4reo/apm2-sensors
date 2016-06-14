@@ -180,6 +180,10 @@ bool sbus_process() {
         }
     }
     
+    if ( new_data && !found_sbus ) {
+        found_sbus = true;
+    }
+    
     return new_data;
 }
 

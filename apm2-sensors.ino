@@ -18,7 +18,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated here manually to match release number)
-#define FIRMWARE_REV 250
+#define FIRMWARE_REV 251
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.
@@ -158,6 +158,7 @@ unsigned long output_counter = 0;
 unsigned long write_millis = 0;
 unsigned long gps_millis = 0;
 bool found_gps = false;
+bool found_sbus = false;
 
 void setup()
 {
@@ -287,14 +288,19 @@ void loop()
     // Fetch new radio frame (and if manual override set, mix the
     // inputs and write the actuator commands to the APM2_RC system)
     // note, the expectation is that only sbus *or* pwm will be connected, otherwise the two will 'fight' each other.
-    pwm_process();
+    if ( ! found_sbus ) {
+        pwm_process();
+    }
     while ( sbus_process() ); // keep processing while there is data in the uart buffer
     
     // suck in any host commmands (would I want to check for host commands at a higher rate? imu rate?)
     while ( read_commands() );
 
     // GPS Update
-    if ( found_gps || (millis() < gps_millis + 20000) ) {
+    // Note #1: if gps is not connected, searching for it causes noticable pauses in the system which is not good.
+    // Note #2: if we don't find the gps within the first 10 seconds, stop looking and assume it's not installed.
+    // Note #3: if the actuators or other functions show pauses or hesitation in the first 10 seconds, this is why, and it's ok.
+    if ( found_gps || (millis() < gps_millis + 10000) ) {
         g_gps->update();
     }
     if ( !found_gps && g_gps->status() > 0 ) {
@@ -320,8 +326,8 @@ void loop()
         output_counter += result;
         output_counter += write_imu_bin(); // write IMU data last as an implicit 'end of data frame' marker.
     } else {
-        // write_pilot_in_ascii();
-        // write_actuator_out_ascii();
+        //write_pilot_in_ascii();
+        //write_actuator_out_ascii();
         if ( found_gps ) {
             write_gps_ascii();
         }

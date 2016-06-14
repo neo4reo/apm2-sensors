@@ -8,6 +8,11 @@ receiver values in, and driving output servos so for some applications
 it could serve as a robot controller.
 
 
+## v2.60 release notes -
+
+* nothing new yet ...
+
+
 ## v2.50 release notes - May 31, 2016
 
 * Add magnetometer (raw) readings to IMU packet.

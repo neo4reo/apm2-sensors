@@ -184,7 +184,7 @@ void setup()
     Serial.println("\nAPM2 Sensors");
 
     // The following code (when enabled) will force setting a specific device serial number.
-    // set_serial_number(105);
+    // set_serial_number(106);
     // read_serial_number();
     
     if ( !config_read_eeprom() ) {

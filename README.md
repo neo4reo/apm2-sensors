@@ -10,13 +10,15 @@ it could serve as a robot controller.
 
 ## v2.60 release notes -
 
-* fix a mistake I only discovered now.  The wrong gyro/accel scaling
-  was being used in the external communication protocal.  This
+* Fixed a mistake I only discovered now.  The wrong gyro/accel scaling
+  was being used in the external communication protocol.  This
   resulted in a loss of available resolution by a factor of 4 for the
   gyros and factor of 2 for the accels.  The results have and will
-  always be correct.  Now they won't artificially lose available
-  resolution.  Note: this change requires a corresponding change at
-  the aura-core driver level.
+  always be correct.  The fix means that now they won't artificially
+  lose available resolution.  Note: this change requires a
+  corresponding change at the aura-core driver level due to changing
+  the packet encoding/decoding semantics with a different scale
+  factor.
 
 
 ## v2.50 release notes - May 31, 2016

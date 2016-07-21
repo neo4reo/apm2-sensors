@@ -18,7 +18,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated here manually to match release number)
-#define FIRMWARE_REV 251
+#define FIRMWARE_REV 252
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.
@@ -45,11 +45,6 @@
 ///////////////////////////////////////////
 
 #define CONFIG_MPU6000_CHIP_SELECT_PIN 53
-
-// pulled from AP_InertialSensor_MPU6000.cpp
-#define MPU6000_GYRO_SCALE 0.00106421951219512195
-#define MPU6000_ACCEL_SCALE 0.00239501953125
-#define MPU6000_TEMP_SCALE 0.02
 
 #define A_LED_PIN        27
 #define B_LED_PIN        26
@@ -100,6 +95,18 @@
 
 Arduino_Mega_ISR_Registry isr_registry;
 AP_TimerProcess timer_scheduler;
+
+// pulled from AP_InertialSensor_MPU6000.cpp
+const float _pi = 3.14159265358979323846;
+const float _d2r = _pi / 180.0;
+const float _g = 9.81;
+
+const float _gyro_lsb_per_dps = 65536 / 1000; // +/- 500dps
+const float _accel_lsb_per_dps = 65536 / 8;   // +/- 4g
+
+const float MPU6000_gyro_scale = _d2r / _gyro_lsb_per_dps;
+const float MPU6000_accel_scale = _g / _accel_lsb_per_dps;
+const float MPU6000_temp_scale = 0.02;
 
 // Serial =  FTDI/Console/Host communication port
 // Serial1 = GPS port

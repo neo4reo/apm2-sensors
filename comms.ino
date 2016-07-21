@@ -400,7 +400,7 @@ uint8_t write_imu_bin()
   
     // gyro data
     for ( int i = 0; i < 3; i++ ) {
-	val = imu_sensors[i] / MPU6000_GYRO_SCALE;
+	val = imu_sensors[i] / MPU6000_gyro_scale;
 	hi = (uint16_t)val / 256;
 	lo = (uint16_t)val - (hi * 256);
 	packet[size++] = byte(lo);
@@ -409,7 +409,7 @@ uint8_t write_imu_bin()
 
     // accel data
     for ( int i = 3; i < 6; i++ ) {
-	val = imu_sensors[i] / MPU6000_ACCEL_SCALE;
+	val = imu_sensors[i] / MPU6000_accel_scale;
 	hi = (uint16_t)val / 256;
 	lo = (uint16_t)val - (hi * 256);
 	packet[size++] = byte(lo);
@@ -430,7 +430,7 @@ uint8_t write_imu_bin()
     packet[size++] = byte(lo);
     packet[size++] = byte(hi);
 
-    val = imu_sensors[6] / MPU6000_TEMP_SCALE;
+    val = imu_sensors[6] / MPU6000_temp_scale;
     hi = (uint16_t)val / 256;
     lo = (uint16_t)val - (hi * 256);
     packet[size++] = byte(lo);

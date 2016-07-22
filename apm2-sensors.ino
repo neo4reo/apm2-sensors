@@ -18,7 +18,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated here manually to match release number)
-#define FIRMWARE_REV 252
+#define FIRMWARE_REV 253
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.
@@ -323,15 +323,17 @@ void loop()
     
     if ( binary_output ) {
         output_counter += write_pilot_in_bin();
-        if ( found_gps ) {
-            output_counter += write_gps_bin();
-        }
         output_counter += write_baro_bin();
         output_counter += write_analog_bin();
         // do a little extra dance with the resturn value because write_status_info_bin() can reset output_counter (but that gets ignored if we do the math in one step)
         uint8_t result = write_status_info_bin();
         output_counter += result;
-        output_counter += write_imu_bin(); // write IMU data last as an implicit 'end of data frame' marker.
+        // write IMU packet at the end of the 'every frame' data set.  This can be used as an
+        // 'end of data frame' marker if the host system wishes to sync up on this.
+        output_counter += write_imu_bin();
+        if ( found_gps ) {
+            output_counter += write_gps_bin();
+        }
     } else {
         //write_pilot_in_ascii();
         //write_actuator_out_ascii();

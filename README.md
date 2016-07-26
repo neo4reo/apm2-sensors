@@ -10,8 +10,13 @@ it could serve as a robot controller.
 
 ## v2.60 release notes -
 
-* Fixed a mistake I only discovered now.  The wrong gyro/accel scaling
-  was being used in the external communication protocol.  This
+* (v2.53) Add apm2 micros() timestamp to IMU output.  The apm2 runs at
+  a really consistent rate and this can be used to create a consistent
+  imu packet timestamp and filter dt on the host side. (Changes IMU
+  packet definition, so bumped up intermediate firmware rev number.)
+
+* (v2.52) Fixed a mistake I only discovered now.  The wrong gyro/accel
+  scaling was being used in the external communication protocol.  This
   resulted in a loss of available resolution by a factor of 4 for the
   gyros and factor of 2 for the accels.  The results have and will
   always be correct.  The fix means that now they won't artificially

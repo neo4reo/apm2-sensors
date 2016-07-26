@@ -18,7 +18,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated here manually to match release number)
-#define FIRMWARE_REV 252
+#define FIRMWARE_REV 253
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.
@@ -164,6 +164,7 @@ APM_RC_APM2 APM_RC;
 unsigned long output_counter = 0;
 unsigned long write_millis = 0;
 unsigned long gps_millis = 0;
+unsigned long imu_micros = 0;
 bool found_gps = false;
 bool found_sbus = false;
 
@@ -270,6 +271,9 @@ void loop()
     // (and a 50hz bailout rate if the IMU goes chips up, so things like manual flight mode, rate dampening,
     // and control mixing will still work)
     while ( imu.num_samples_available() < 5 && millis() < loop_timeout ); // busy wait for next frame
+    imu_micros = micros();
+    
+    // next loop timeout
     loop_timeout = millis() + 2*dt_millis;
     
     // IMU Update
@@ -336,7 +340,7 @@ void loop()
         //write_pilot_in_ascii();
         //write_actuator_out_ascii();
         if ( found_gps ) {
-            write_gps_ascii();
+            // write_gps_ascii();
         }
         // write_baro_ascii();
         // write_analog_ascii();

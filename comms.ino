@@ -376,9 +376,10 @@ uint8_t write_imu_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
-    byte size = 0;
-    byte packet[256]; // hopefully never larger than this!
-
+    byte size = 4 /* for timestamp */ + 2 * MAX_IMU_SENSORS + 6 /* for mags */;
+    byte packet_buf[256]; // hopefully never larger than this!
+    byte *packet = packet_buf;
+    
     // start of message sync bytes
     buf[0] = START_OF_MSG0; 
     buf[1] = START_OF_MSG1; 
@@ -391,56 +392,38 @@ uint8_t write_imu_bin()
     Serial.write( buf, 1 );
 
     // packet length (1 byte)
-    buf[0] = 2 * MAX_IMU_SENSORS + 6 /* for mags */;
+    buf[0] = size;
     Serial.write( buf, 1 );
 
+    *(uint32_t *)packet = imu_micros; packet += 4;
+
     int16_t val = 0;
-    int hi = 0;
-    int lo = 0;
   
     // gyro data
     for ( int i = 0; i < 3; i++ ) {
 	val = imu_sensors[i] / MPU6000_gyro_scale;
-	hi = (uint16_t)val / 256;
-	lo = (uint16_t)val - (hi * 256);
-	packet[size++] = byte(lo);
-	packet[size++] = byte(hi);
+        *(int16_t *)packet = val; packet += 2;
     }
 
     // accel data
     for ( int i = 3; i < 6; i++ ) {
 	val = imu_sensors[i] / MPU6000_accel_scale;
-	hi = (uint16_t)val / 256;
-	lo = (uint16_t)val - (hi * 256);
-	packet[size++] = byte(lo);
-	packet[size++] = byte(hi);
+        *(int16_t *)packet = val; packet += 2;
     }
   
     // mag is a signed int16_t but transport it as unsigned
-    hi = (uint16_t)compass.mag_x / 256;
-    lo = (uint16_t)compass.mag_x - (hi * 256);
-    packet[size++] = byte(lo);
-    packet[size++] = byte(hi);
-    hi = (uint16_t)compass.mag_y / 256;
-    lo = (uint16_t)compass.mag_y - (hi * 256);
-    packet[size++] = byte(lo);
-    packet[size++] = byte(hi);
-    hi = (uint16_t)compass.mag_z / 256;
-    lo = (uint16_t)compass.mag_z - (hi * 256);
-    packet[size++] = byte(lo);
-    packet[size++] = byte(hi);
+    *(int16_t *)packet = compass.mag_x; packet += 2;
+    *(int16_t *)packet = compass.mag_y; packet += 2;
+    *(int16_t *)packet = compass.mag_z; packet += 2;
 
     val = imu_sensors[6] / MPU6000_temp_scale;
-    hi = (uint16_t)val / 256;
-    lo = (uint16_t)val - (hi * 256);
-    packet[size++] = byte(lo);
-    packet[size++] = byte(hi);
-      
+    *(int16_t *)packet = val; packet += 2;
+
     // write packet
-    Serial.write( packet, size );
+    Serial.write( packet_buf, size );
 
     // check sum (2 bytes)
-    ugear_cksum( IMU_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+    ugear_cksum( IMU_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
     buf[0] = cksum0; 
     buf[1] = cksum1; 
     buf[2] = 0;

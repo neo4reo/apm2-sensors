@@ -620,8 +620,9 @@ uint8_t write_analog_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
-    byte size = 0;
-    byte packet[256]; // hopefully never larger than this!
+    byte size = 2 * MAX_ANALOG_INPUTS;
+    byte packet_buf[256]; // hopefully never larger than this!
+    byte *packet = packet_buf;
 
     // start of message sync bytes
     buf[0] = START_OF_MSG0; 
@@ -635,23 +636,19 @@ uint8_t write_analog_bin()
     Serial.write( buf, 1 );
 
     // packet length (1 byte)
-    buf[0] = 2 * MAX_ANALOG_INPUTS;
+    buf[0] = size;
     Serial.write( buf, 1 );
 
     // channel data
     for ( int i = 0; i < MAX_ANALOG_INPUTS; i++ ) {
-	uint16_t val = analog[i];
-	int hi = val / 256;
-	int lo = val - (hi * 256);
-	packet[size++] = byte(lo);
-	packet[size++] = byte(hi);
+        *(uint16_t *)packet = analog[i]; packet += 2;
     }
     
     // write packet
-    Serial.write( packet, size );
+    Serial.write( packet_buf, size );
 
     // check sum (2 bytes)
-    ugear_cksum( ANALOG_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+    ugear_cksum( ANALOG_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
     buf[0] = cksum0; 
     buf[1] = cksum1; 
     buf[2] = 0;
@@ -669,17 +666,11 @@ void write_analog_ascii()
     
     // output servo data
     Serial.print("Analog:");
-    for ( int i = 0; i < MAX_ANALOG_INPUTS - 1; i++ ) {
-        Serial.print((float)analog[i] / 64.0, 2);
+    for ( int i = 0; i < MAX_ANALOG_INPUTS; i++ ) {
         Serial.print(" ");
+        Serial.print(analog[i]);
     }
-    Serial.println((float)analog[MAX_ANALOG_INPUTS-1] / 1000.0, 2);
-    /*
-    Serial.printf("%.2f ", vcc_average);
-    Serial.printf("%.2f ", (float)battery_voltage);
-    Serial.printf("%.4f ", (float)amp_filt);
-    Serial.printf("%.4f\n", (float)amps_sum);
-    */
+    Serial.println();
 }
 
 /* output a binary representation of various status and config information */

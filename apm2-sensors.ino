@@ -18,7 +18,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated here manually to match release number)
-#define FIRMWARE_REV 254
+#define FIRMWARE_REV 253
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.
@@ -52,6 +52,13 @@
 #define LED_ON           LOW
 #define LED_OFF          HIGH
 
+#define PITOT_SOURCE_ANALOG_PIN 0
+#define CURRENT1_ANALOG_PIN 1 /* A12 if power module port used */
+#define VOLTAGE1_ANALOG_PIN 2 /* A13 if power module port used, but caution bug kills VCC sensing, fixed in later apm code. */
+//#define CURRENT2_ANALOG_PIN 3
+//#define VOLTAGE2_ANALOG_PIN 4
+// ANALOG_PIN_VCC is defined in libraries/AP_AnalogSource/AP_Analog_Source_Arduino.h
+
 // these need to be defined before including HardwareSerial.h
 #define SERIAL_TX_BUFFER_SIZE 256
 #define SERIAL_RX_BUFFER_SIZE 256
@@ -75,10 +82,13 @@
 #include <AP_InertialSensor.h> // Inertial Sensor (uncalibrated IMU) Library
 #include <AP_GPS.h>         // ArduPilot GPS library
 #include <AP_IMU.h>         // ArduPilot Mega IMU Library
+#include <AP_AnalogSource.h>
+#include <AP_AnalogSource_Arduino.h>
+//#include <AP_AHRS.h>        // ArduPilot Mega AHRS Library
 #include <Filter.h>			// Filter library
 #include <ModeFilter.h>		// Mode Filter from Filter library
 #include <LowPassFilter.h>	// LowPassFilter class (inherits from Filter class)
-//#include <AP_Airspeed.h>
+#include <AP_Airspeed.h>
 #include <APM_RC.h> // ArduPilot Mega RC Library
 
 #include "config.h"
@@ -126,6 +136,15 @@ Vector3f imu_gyro;
 
 // Magnetometer
 AP_Compass_HMC5843 compass;
+
+AP_AnalogSource_Arduino pitot_source(PITOT_SOURCE_ANALOG_PIN);
+AP_AnalogSource_Arduino current1_source(CURRENT1_ANALOG_PIN);
+AP_AnalogSource_Arduino battery1_source(VOLTAGE1_ANALOG_PIN);
+//AP_AnalogSource_Arduino current2_source(CURRENT2_ANALOG_PIN);
+//AP_AnalogSource_Arduino battery2_source(VOLTAGE2_ANALOG_PIN);
+
+#define MAX_ANALOG_INPUTS 6
+uint16_t analog[MAX_ANALOG_INPUTS];
 
 static unsigned long loop_timeout = 0;
 static uint32_t dt_millis = 1000 / MASTER_HZ;
@@ -228,7 +247,12 @@ void setup()
     delay(200);
     
     // Configure Analog inputs
-    setup_analogs();
+    AP_AnalogSource_Arduino::init_timer(&timer_scheduler);
+    pinMode(PITOT_SOURCE_ANALOG_PIN, INPUT);
+    pinMode(CURRENT1_ANALOG_PIN, INPUT);
+    pinMode(VOLTAGE1_ANALOG_PIN, INPUT);
+    //pinMode(CURRENT2_ANALOG_PIN, INPUT);
+    //pinMode(VOLTAGE2_ANALOG_PIN, INPUT);
 
     // prime the pump to avoid overflow in the "averaging" logic
     read_analogs();
@@ -319,12 +343,37 @@ void loop()
             // write_gps_ascii();
         }
         // write_baro_ascii();
-        write_analog_ascii();
+        // write_analog_ascii();
         // write_status_info_ascii();
         // write_imu_ascii();
     }
 }
 
+
+void read_analogs() {
+    // Analog inputs update (values are averages of the internal readings since the last read()
+    // These are 10 bit values (0-1023) but floating point averages, so let's scale them up to the
+    // full 16 bit range (0-65535) or multiple by 2^6 (64) so we can convey some precision of 
+    // the "averaged" value.
+    
+    // special case (ugly) but if we put this in the global scope, then it hangs everything.  The
+    // side effect here is that this isn't called until after setup() finishes.
+    static AP_AnalogSource_Arduino vcc(ANALOG_PIN_VCC);
+    
+    analog[0] = (uint16_t)(pitot_source.read_average() * 64.0);
+    analog[1] = (uint16_t)(battery1_source.read_average() * 64.0);
+    analog[2] = (uint16_t)(current1_source.read_average() * 64.0);
+    //analog[3] = (uint16_t)(battery2_source.read_average() * 64.0);
+    //analog[4] = (uint16_t)(current2_source.read_average() * 64.0);
+    analog[5] = vcc.read_vcc();
+
+    /*    
+    vcc_average = 0.99 * vcc_average + 0.01 * (analog[5] / 1000.0);
+    battery_voltage = (analog[1]/64.0) * (vcc_average/1024.0) * VOLT_DIV_RATIO;
+    battery_amps = (((analog[2]/64.0) * (vcc_average/1024.0)) - CURR_AMPS_OFFSET) * CURR_AMP_PER_VOLT * 10;
+    amps_sum += battery_amps * dt_millis * 0.0002778; // .0002778 is 1/3600 (conversion to hours)
+    */
+}
 
 void flash_leds(bool on)
 {

@@ -10,10 +10,6 @@ it could serve as a robot controller.
 
 ## v2.60 release notes -
 
-* (v2.54) Test the idea of discarding the ardupilot analog input
-  infrastructure and just using the far simpler arduino system
-  directly.
-
 * (v2.53) Add apm2 micros() timestamp to IMU output.  The apm2 runs at
   a really consistent rate and this can be used to create a consistent
   imu packet timestamp and filter dt on the host side. (Changes IMU

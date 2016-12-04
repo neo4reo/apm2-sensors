@@ -174,10 +174,21 @@ bool sbus_process() {
             new_data = true;
             //Serial.println("bytes are available");
             input = Serial2.read();
-            if ( input == SBUS_FOOTER_VALUE) {
+            if ( input == SBUS_FOOTER_VALUE ) {
                 sbus_parse();
+                state = 0; 
+            } else {
+                //Serial.println("wrong sbus footer value, skipping ahead to next footer byte");
+                input = Serial2.read();
+                while ( Serial2.available() > 0 && input != SBUS_FOOTER_VALUE ) {
+                    input = Serial2.read();
+                }
+                if ( input == SBUS_FOOTER_VALUE ) {
+                   // set state to zero so we begin parsing the next new frame correctly
+                   // (but something went wrong with this frame so don't parse the data/discard.)
+                   state = 0;
+                }
             }
-            state = 0; 
         }
     }
     

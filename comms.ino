@@ -308,8 +308,9 @@ uint8_t write_pilot_in_bin()
 {
     byte buf[3];
     byte cksum0, cksum1;
-    byte size = 0;
-    byte packet[256]; // hopefully never larger than this!
+    byte size = 2 * MAX_CHANNELS;
+    byte packet_buf[256]; // hopefully never larger than this!
+    byte *packet = packet_buf;
 
     // start of message sync bytes
     buf[0] = START_OF_MSG0; 
@@ -329,10 +330,7 @@ uint8_t write_pilot_in_bin()
     // servo data
     for ( int i = 0; i < MAX_CHANNELS; i++ ) {
 	int16_t val = receiver_norm[i] * 16384;
-	int hi = val / 256;
-	int lo = val - (hi * 256);
-	packet[size++] = byte(lo);
-	packet[size++] = byte(hi);
+	*(int16_t *)packet = val; packet += 2;
     }
     
     // write packet

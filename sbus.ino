@@ -121,7 +121,7 @@ void sbus_parse() {
     sbus_raw2norm(sbus_raw, receiver_norm);
     // receiver_pwm is only for pwm receivers // pwm_norm2pwm(receiver_norm, receiver_pwm);
     
-    if ( sbus_raw[CH_8] > SBUS_CENTER_VALUE - SBUS_QUARTER_RANGE ) {
+    if ( receiver_norm[CH_8] < 0.0 ) {
         // manual pass through requested, let's get it done right now
         sas_update( receiver_norm );
         mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );

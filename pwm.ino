@@ -87,7 +87,7 @@ int pwm_process() {
  
         pwm_pwm2norm( receiver_pwm, receiver_norm );
         
-        if ( receiver_pwm[CH_8] > PWM_CENTER - PWM_QUARTER_RANGE ) {
+        if ( receiver_norm[CH_8] < 0.0 ) {
             // manual pass through requested, let's get it done right now
             sas_update( receiver_norm );
             mixing_update( receiver_norm, true /* ch1-6 */, true /* ch7 */, false /* no ch8 */ );

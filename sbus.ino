@@ -214,31 +214,5 @@ void sbus_raw2norm( uint16_t *raw, float *norm ) {
     }
 }
 
-// compute raw sbus values from normalized command values.
-// (handle actuator reversing here.)
-void sbus_norm2raw( float *norm, uint16_t *raw ) {
-    for ( int i = 0; i < MAX_CHANNELS; i++ ) {
-        // convert to pulse length (special case ch6 when in flaperon mode)
-        if ( symmetrical[i] || (i == 5 && config.mix_flaperon) ) {
-            // i.e. aileron, rudder, elevator
-            //Serial.println(i);
-            //Serial.println(config.act_rev[i]);
-	    raw[i] = SBUS_CENTER_VALUE + (int)(SBUS_HALF_RANGE * norm[i] * config.act_gain[i]);
-        } else {
-	    // i.e. throttle, flaps
-            if ( config.act_gain[i] > 0.0 ) {
-	        raw[i] = SBUS_MIN_VALUE + (int)(SBUS_RANGE * norm[i] * config.act_gain[i]);
-            } else {
-	        raw[i] = SBUS_MAX_VALUE + (int)(SBUS_RANGE * norm[i] * config.act_gain[i]);
-            }
-        }
-        if ( raw[i] < SBUS_MIN_VALUE ) {
-            raw[i] = SBUS_MIN_VALUE;
-        }
-        if ( raw[i] > SBUS_MAX_VALUE ) {
-            raw[i] = SBUS_MAX_VALUE;
-        }
-    }
-}
 
 

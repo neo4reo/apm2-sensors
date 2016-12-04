@@ -328,7 +328,7 @@ uint8_t write_pilot_in_bin()
 
     // servo data
     for ( int i = 0; i < MAX_CHANNELS; i++ ) {
-	long val = receiver_pwm[i];
+	int16_t val = receiver_norm[i] * 16384;
 	int hi = val / 256;
 	int lo = val - (hi * 256);
 	packet[size++] = byte(lo);

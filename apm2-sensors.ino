@@ -18,7 +18,7 @@
 ///////////////////////////////////////////
 
 // Firmware rev (needs to be updated here manually to match release number)
-#define FIRMWARE_REV 253
+#define FIRMWARE_REV 254
 
 // this is the master loop update rate.  For 115,200 baud communication, 100hz is as fast as
 // we can go without saturating our uart link to the host.
@@ -343,7 +343,7 @@ void loop()
             // write_gps_ascii();
         }
         // write_baro_ascii();
-        // write_analog_ascii();
+        write_analog_ascii();
         // write_status_info_ascii();
         // write_imu_ascii();
     }

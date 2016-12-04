@@ -62,6 +62,7 @@ uint16_t sbus_raw[MAX_CHANNELS];
 void sbus_parse() {
     if ( sbus_data.failsafe_act ) {
         //Serial.println("SBUS: failsafe activated!");
+	// Note this would prevent us from parsing any receiver fail safe settings!
         return;      
     }
     if ( sbus_data.frame_lost ) {
@@ -118,7 +119,7 @@ void sbus_parse() {
     }
     
     sbus_raw2norm(sbus_raw, receiver_norm);
-    pwm_norm2pwm(receiver_norm, receiver_pwm);
+    // receiver_pwm is only for pwm receivers // pwm_norm2pwm(receiver_norm, receiver_pwm);
     
     if ( sbus_raw[CH_8] > SBUS_CENTER_VALUE - SBUS_QUARTER_RANGE ) {
         // manual pass through requested, let's get it done right now

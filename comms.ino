@@ -70,7 +70,7 @@ bool parse_message_bin( byte id, byte *buf, byte message_size )
 	}
 	pwm_pwm2norm( autopilot_pwm, autopilot_norm );
     
-	if ( receiver_pwm[CH_8] < PWM_CENTER - PWM_QUARTER_RANGE ) {
+	if ( receiver_norm[CH_8] > 0.0 ) {
 	    // autopilot mode active (determined elsewhere when each
 	    // new receiver frame is ready) mix the inputs and write
 	    // the actuator outputs now

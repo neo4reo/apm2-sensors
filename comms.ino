@@ -327,17 +327,17 @@ uint8_t write_pilot_in_bin()
     buf[0] = 2 * MAX_CHANNELS;
     Serial.write( buf, 1 );
 
-    // servo data
+    // receiver data
     for ( int i = 0; i < MAX_CHANNELS; i++ ) {
-	int16_t val = receiver_norm[i] * 16384;
+	int16_t val = receiver_norm[i] * 16384.0;
 	*(int16_t *)packet = val; packet += 2;
     }
     
     // write packet
-    Serial.write( packet, size );
+    Serial.write( packet_buf, size );
 
     // check sum (2 bytes)
-    ugear_cksum( PILOT_PACKET_ID, size, packet, size, &cksum0, &cksum1 );
+    ugear_cksum( PILOT_PACKET_ID, size, packet_buf, size, &cksum0, &cksum1 );
     buf[0] = cksum0; 
     buf[1] = cksum1; 
     buf[2] = 0;
@@ -351,10 +351,10 @@ void write_pilot_in_ascii()
     // receiver input data
     Serial.print("RCIN:");
     for ( int i = 0; i < MAX_CHANNELS - 1; i++ ) {
-        Serial.print(receiver_pwm[i], DEC);
+        Serial.print(receiver_norm[i], 3);
         Serial.print(" ");
     }
-    Serial.println(receiver_pwm[MAX_CHANNELS-1], DEC);
+    Serial.println(receiver_norm[MAX_CHANNELS-1], 3);
 }
 
 void write_actuator_out_ascii()

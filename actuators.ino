@@ -25,7 +25,7 @@
 
 
 // define if a channel is symmetrical or not (i.e. mapped to [0,1] for throttle, flaps, spoilers; [-1,1] for aileron, elevator, rudder
-bool symmetrical[MAX_CHANNELS] = {1, 1, 0, 1, 0, 0, 0, 0};
+bool symmetrical[MAX_CHANNELS] = {1, 1, 0, 1, 0, 0, 0, 1};
 
 // official flight command values.  These could source from the RC receiver or the autopilot depending on the auto/manual
 // selection switch state.  These are pre-mix commands and will be mixed and written to the actuators for both manual and
@@ -207,7 +207,7 @@ void sas_update( float control_norm[MAX_CHANNELS] ) {
         } else if ( tune > 2.0 ) {
             tune = 2.0;
         }
-    } 
+    }
     if ( config.sas_rollaxis ) {
         control_norm[0] -= tune * config.sas_rollgain * imu_sensors[0];
     }

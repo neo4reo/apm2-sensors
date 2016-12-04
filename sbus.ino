@@ -60,6 +60,7 @@ static uint16_t sbus_ch_data[ SBUS_CH_MAX ];
 uint16_t sbus_raw[MAX_CHANNELS];
 
 void sbus_parse() {
+    //Serial.println("sbus_parse()");
     if ( sbus_data.failsafe_act ) {
         //Serial.println("SBUS: failsafe activated!");
 	// Note this would prevent us from parsing any receiver fail safe settings!
@@ -130,6 +131,9 @@ void sbus_parse() {
         // autopilot mode, but let's update the sas gain tuning channel if requested
         mixing_update( receiver_norm, false /* ch1-6 */, config.sas_ch7gain /* ch7 */, false /* no ch8 */ );
     }
+    //Serial.print(sbus_raw[CH_1]);
+    //Serial.print(" ");
+    //Serial.println(receiver_norm[CH_1]);
 }
 
 // read available bytes on the sbus uart and return true if any new data is read

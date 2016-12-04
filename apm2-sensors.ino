@@ -337,13 +337,13 @@ void loop()
         output_counter += result;
         output_counter += write_imu_bin(); // write IMU data last as an implicit 'end of data frame' marker.
     } else {
-        //write_pilot_in_ascii();
+        write_pilot_in_ascii();
         //write_actuator_out_ascii();
         if ( found_gps ) {
             // write_gps_ascii();
         }
         // write_baro_ascii();
-        write_analog_ascii();
+        //write_analog_ascii();
         // write_status_info_ascii();
         // write_imu_ascii();
     }

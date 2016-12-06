@@ -60,17 +60,13 @@ static uint16_t sbus_ch_data[ SBUS_CH_MAX ];
 uint16_t sbus_raw[MAX_CHANNELS];
 
 void sbus_parse() {
-    //Serial.println("sbus_parse()");
+    // we don't need to return from these, these are just notifying us of receiver state
     if ( sbus_data.failsafe_act ) {
-        //Serial.println("SBUS: failsafe activated!");
-	// Note this would prevent us from parsing any receiver fail safe settings!
-        return;      
+        // Serial.println("SBUS: failsafe activated!");
     }
     if ( sbus_data.frame_lost ) {
-        //Serial.println("SBUS: frame lost");
-        return;
+        // Serial.println("SBUS: frame lost");
     }
-
     sbus_ch_data[  0 ] = sbus_data.ch1;
     sbus_ch_data[  1 ] = sbus_data.ch2;
     sbus_ch_data[  2 ] = ( sbus_data.ch3_hi << 10 ) | sbus_data.ch3_lo;
